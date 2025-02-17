@@ -31,5 +31,19 @@ namespace LifeCounterAPI.Controllers
 
             return new JsonResult(response);
         }
+
+        [HttpPut]
+        public async Task<IActionResult> EditLifeCounter(AdminsEditLifeCounterRequest request)
+        {
+            var (content, message) = await this._adminsService.EditLifeCounter(request);
+
+            var response = new Response<AdminsEditLifeCounterResponse>
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
     }
 }

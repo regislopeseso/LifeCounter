@@ -37,7 +37,7 @@ namespace LifeCounterAPI.Services
 
             if (exists == true)
             {
-                return (null, $"Error, a Life Counter for the game: {request.GameName} already exists");
+                return (null, $"Error: a Life Counter for the game: {request.GameName} already exists");
             }
 
 
@@ -62,7 +62,61 @@ namespace LifeCounterAPI.Services
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
+                return (false, "Error: naming the game is mandatory");
+            }
+
+            return (true, String.Empty);
+        }
+
+        public async Task<(AdminsEditLifeCounterResponse?, string)> EditLifeCounter(AdminsEditLifeCounterRequest request)
+        {
+            if(request == null)
+            {
+                return (null, "Error: no information providade");
+            }
+
+            var (isValid, message) = EditIsValid(request);
+
+            if (isValid == false)
+            {
+                return (null, message);
+            }
+
+            var exists = await this._daoDbContext
+                .LifeCounters
+                .AnyAsync(a => a.GameName == request.GameName && a.Id != request.LifeCounterId);
+
+            if (exists == true)
+            {
+                return (null, $"Error: a Life Counter for the game: {request.GameName} already exists");
+            }
+
+            var lifeCounterDB = await this._daoDbContext
+                                          .LifeCounters
+                                          .FirstOrDefaultAsync(a => a.Id == request.LifeCounterId);
+
+            lifeCounterDB.GameName = request.GameName;
+
+            if(request.LifeTotal != 0)
+            {
+                lifeCounterDB.LifeTotal = request.LifeTotal;
+            }
+
+            await this._daoDbContext.SaveChangesAsync();
+           
+            return (null, "Life Counter edited successfully");
+        }
+
+        public static (bool, string) EditIsValid(AdminsEditLifeCounterRequest request)
+        {
+            if (String.IsNullOrWhiteSpace(request.GameName) == true)
+            {
                 return (false, "Error, naming the game is mandatory");
+            }
+
+            if (request.LifeCounterId <= 0)
+            {
+                return (false, $"Error: invalid LifeCounterId: {request.LifeCounterId}");
             }
 
             return (true, String.Empty);
