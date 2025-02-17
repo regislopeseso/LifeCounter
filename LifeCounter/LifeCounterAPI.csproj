@@ -17,12 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-    <Folder Include="Models\Dtos\" />
-    <Folder Include="Models\Entities\" />
+    <Folder Include="Migrations\" />
     <Folder Include="Models\Enums\" />
-    <Folder Include="Utilities\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>
