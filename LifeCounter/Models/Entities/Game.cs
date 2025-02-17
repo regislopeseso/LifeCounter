@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LifeCounterAPI.Models.Entities
 {
-    [Table("LifeCounters")]
-    public class LifeCounter
+    [Table("Games")]
+    public class Game
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

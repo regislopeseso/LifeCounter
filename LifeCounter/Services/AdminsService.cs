@@ -17,7 +17,7 @@ namespace LifeCounterAPI.Services
             _daoDbContext = daoDbContext;
         }
 
-        public async Task<(AdminsCreateLifeCounterResponse?, string)> CreateLifeCounter(AdminsCreateLifeCounterRequest request)
+        public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest request)
         {
             if (request == null)
             {
@@ -32,7 +32,7 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .LifeCounters
+                .Games
                 .AnyAsync(a => a.GameName == request.GameName);
 
             if (exists == true)
@@ -41,7 +41,7 @@ namespace LifeCounterAPI.Services
             }
 
 
-            var newLifeCounter = new LifeCounter()
+            var newLifeCounter = new Game()
             {
                 GameName = request.GameName,
             };
@@ -58,7 +58,7 @@ namespace LifeCounterAPI.Services
             return (null, "New Life Counter created successfully");
         }
 
-        public static (bool, string) CreateIsValid(AdminsCreateLifeCounterRequest request)
+        public static (bool, string) CreateIsValid(AdminsCreateGameRequest request)
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
@@ -68,7 +68,7 @@ namespace LifeCounterAPI.Services
             return (true, String.Empty);
         }
 
-        public async Task<(AdminsEditLifeCounterResponse?, string)> EditLifeCounter(AdminsEditLifeCounterRequest request)
+        public async Task<(AdminsEditGameResponse?, string)> EditGame(AdminsEditGameRequest request)
         {
             if (request == null)
             {
@@ -83,7 +83,7 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .LifeCounters
+                .Games
                 .AnyAsync(a => a.GameName == request.GameName && a.Id != request.LifeCounterId);
 
             if (exists == true)
@@ -92,7 +92,7 @@ namespace LifeCounterAPI.Services
             }
 
             var lifeCounterDB = await this._daoDbContext
-                                          .LifeCounters
+                                          .Games
                                           .FirstOrDefaultAsync(a => a.Id == request.LifeCounterId);
 
             lifeCounterDB.GameName = request.GameName;
@@ -107,7 +107,7 @@ namespace LifeCounterAPI.Services
             return (null, "Life Counter edited successfully");
         }
 
-        public static (bool, string) EditIsValid(AdminsEditLifeCounterRequest request)
+        public static (bool, string) EditIsValid(AdminsEditGameRequest request)
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
@@ -122,7 +122,7 @@ namespace LifeCounterAPI.Services
             return (true, String.Empty);
         }
 
-        public async Task<(AdminsRemoveLifeCounterResponse?, string)> RemoveLifeCounter(AdminsRemoveLifeCounterRequest request)
+        public async Task<(AdminsRemoveGameResponse?, string)> RemoveGame(AdminsRemoveGameRequest request)
         {
             if (request == null || request.LifeCounterId <= 0)
             {
@@ -130,7 +130,7 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .LifeCounters
+                .Games
                 .AnyAsync(a => a.Id == request.LifeCounterId);
 
             if (exists == false)
@@ -141,7 +141,7 @@ namespace LifeCounterAPI.Services
             try
             {
                 var lifeCounterId = await this._daoDbContext
-                                              .LifeCounters
+                                              .Games
                                               .Where(a => a.Id == request.LifeCounterId)
                                               .ExecuteDeleteAsync();
             }

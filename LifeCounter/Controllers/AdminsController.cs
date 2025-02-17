@@ -19,11 +19,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateLifeCounter(AdminsCreateLifeCounterRequest request)
+        public async Task<IActionResult> CreateGame(AdminsCreateGameRequest request)
         {
-            var (content, message) = await this._adminsService.CreateLifeCounter(request);
+            var (content, message) = await this._adminsService.CreateGame(request);
 
-            var response = new Response<AdminsCreateLifeCounterResponse>
+            var response = new Response<AdminsCreateGameResponse>
             {
                 Content = content,
                 Message = message
@@ -33,11 +33,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> EditLifeCounter(AdminsEditLifeCounterRequest request)
+        public async Task<IActionResult> EditGame(AdminsEditGameRequest request)
         {
-            var (content, message) = await this._adminsService.EditLifeCounter(request);
+            var (content, message) = await this._adminsService.EditGame(request);
 
-            var response = new Response<AdminsEditLifeCounterResponse>
+            var response = new Response<AdminsEditGameResponse>
             {
                 Content = content,
                 Message = message
@@ -47,11 +47,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> RemoveLifeCounter(AdminsRemoveLifeCounterRequest request)
+        public async Task<IActionResult> RemoveGame(AdminsRemoveGameRequest request)
         {
-            var (content, message) = await this._adminsService.RemoveLifeCounter(request);
+            var (content, message) = await this._adminsService.RemoveGame(request);
 
-            var response = new Response<AdminsRemoveLifeCounterResponse>
+            var response = new Response<AdminsRemoveGameResponse>
             {
                 Content = content,
                 Message = message
