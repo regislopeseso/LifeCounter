@@ -45,5 +45,19 @@ namespace LifeCounterAPI.Controllers
 
             return new JsonResult(response);
         }
+
+        [HttpDelete]
+        public async Task<IActionResult> RemoveLifeCounter(AdminsRemoveLifeCounterRequest request)
+        {
+            var (content, message) = await this._adminsService.RemoveLifeCounter(request);
+
+            var response = new Response<AdminsRemoveLifeCounterResponse>
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
     }
 }
