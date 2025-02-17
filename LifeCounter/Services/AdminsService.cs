@@ -33,7 +33,7 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                 .Games
-                .AnyAsync(a => a.GameName == request.GameName);
+                .AnyAsync(a => a.Name == request.GameName);
 
             if (exists == true)
             {
@@ -43,7 +43,7 @@ namespace LifeCounterAPI.Services
 
             var newLifeCounter = new Game()
             {
-                GameName = request.GameName,
+                Name = request.GameName,
             };
 
             if (request.LifeTotal != 0)
@@ -84,7 +84,7 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                 .Games
-                .AnyAsync(a => a.GameName == request.GameName && a.Id != request.LifeCounterId);
+                .AnyAsync(a => a.Name == request.GameName && a.Id != request.LifeCounterId);
 
             if (exists == true)
             {
@@ -95,7 +95,7 @@ namespace LifeCounterAPI.Services
                                           .Games
                                           .FirstOrDefaultAsync(a => a.Id == request.LifeCounterId);
 
-            lifeCounterDB.GameName = request.GameName;
+            lifeCounterDB.Name = request.GameName;
 
             if (request.LifeTotal != 0)
             {
