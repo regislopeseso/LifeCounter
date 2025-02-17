@@ -31,5 +31,33 @@ namespace LifeCounterAPI.Controllers
 
             return new JsonResult(response);
         }
+
+        [HttpPost]
+        public async Task<IActionResult> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
+        {
+            var (content, message) = await _playersService.IncreaseLifeTotal(request);
+
+            var response = new Response<PlayersIncreaseLifeTotalResponse>()
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
+        {
+            var (content, message) = await _playersService.DecreaseLifeTotal(request);
+
+            var response = new Response<PlayersDecreaseLifeTotalResponse>()
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
     }
 }

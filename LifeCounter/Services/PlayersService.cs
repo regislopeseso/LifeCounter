@@ -68,9 +68,9 @@ namespace LifeCounterAPI.Services
 
             await _daoDbContext.SaveChangesAsync();
 
-            
+
             var content = new List<PlayersStartGameResponse>();
-            foreach(var newPlayer in  gameDB.Players)
+            foreach (var newPlayer in gameDB.Players)
             {
                 content.Add(new PlayersStartGameResponse
                 {
@@ -78,11 +78,67 @@ namespace LifeCounterAPI.Services
                     LifeTotal = newPlayer.LifeTotal,
                 });
             }
-              
+
 
             return (content, $"{gameDB.Name} match started with {gameDB.Players.Count} players");
         }
 
-        public async Task<(PlayersIncreaseLifeTotalResponse>?, string)> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
+        public async Task<(PlayersIncreaseLifeTotalResponse?, string)> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
+        {
+            if (request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            var exists = await this._daoDbContext
+                                   .Players
+                                   .AnyAsync(a => a.Id == request.PlayerId);
+
+            if (exists == false)
+            {
+                return (null, "Error: invalid PlayerId");
+            }
+
+            if (request.HealingAmount <= 0)
+            {
+                return (null, "Error: invalid healing");
+            }
+
+            await this._daoDbContext
+                      .Players
+                      .Where(a => a.Id == request.PlayerId)
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, b => b.LifeTotal + request.HealingAmount));
+
+            return (null, $"Player healed {request.HealingAmount}");
+        }
+
+        public async Task<(PlayersDecreaseLifeTotalResponse?, string)> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
+        {
+            if (request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            var exists = await this._daoDbContext
+                                   .Players
+                                   .AnyAsync(a => a.Id == request.PlayerId);
+
+            if (exists == false)
+            {
+                return (null, "Error: invalid PlayerId");
+            }
+
+            if (request.DamageAmount <= 0)
+            {
+                return (null, "Error: invalid healing");
+            }
+
+            await this._daoDbContext
+                      .Players
+                      .Where(a => a.Id == request.PlayerId)
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, b => b.LifeTotal - request.DamageAmount));
+
+            return (null, $"Player suffered {request.DamageAmount} damage");
+        }
     }
 }
