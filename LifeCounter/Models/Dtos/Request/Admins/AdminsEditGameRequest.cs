@@ -4,7 +4,7 @@
     {
         public int GameId { get; set; }
 
-        public required string GameName {  get; set; }
-        public int LifeTotal { get; set; }
+        public string? GameName {  get; set; }
+        public int? LifeTotal { get; set; }
     }
 }

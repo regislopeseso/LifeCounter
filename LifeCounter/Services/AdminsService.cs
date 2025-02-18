@@ -21,7 +21,7 @@ namespace LifeCounterAPI.Services
         {
             if (request == null)
             {
-                return (null, "Error: no information providade");
+                return (null, "Error: no information provided");
             }
 
             var (isValid, message) = CreateIsValid(request);
@@ -32,26 +32,21 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .Games
-                .AnyAsync(a => a.Name == request.GameName);
+                                   .Games
+                                   .AnyAsync(a => a.Name == request.GameName);
 
             if (exists == true)
             {
                 return (null, $"Error: {request.GameName} already exists");
             }
 
-
-            var newLifeCounter = new Game()
+            var newGame = new Game()
             {
                 Name = request.GameName,
+                LifeTotal = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
             };
 
-            if (request.LifeTotal != 0)
-            {
-                newLifeCounter.LifeTotal = request.LifeTotal;
-            };
-
-            this._daoDbContext.Add(newLifeCounter);
+            this._daoDbContext.Add(newGame);
 
             await this._daoDbContext.SaveChangesAsync();
 
@@ -62,7 +57,12 @@ namespace LifeCounterAPI.Services
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
-                return (false, "Error: naming the game is mandatory");
+                return (false, "Error: informing a name for the new game is mandatory ");
+            }
+
+            if (request.LifeTotal.HasValue == false)
+            {
+                return (false, "Error: informing a LifeTotal for the new game is mandatory");
             }
 
             return (true, String.Empty);
@@ -72,7 +72,7 @@ namespace LifeCounterAPI.Services
         {
             if (request == null)
             {
-                return (null, "Error: no information providade");
+                return (null, "Error: no information provided");
             }
 
             var (isValid, message) = EditIsValid(request);
@@ -83,24 +83,25 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .Games
-                .AnyAsync(a => a.Name == request.GameName && a.Id != request.GameId);
+                                   .Games
+                                   .AnyAsync(a => a.Name == request.GameName && a.Id != request.GameId);
 
             if (exists == true)
             {
                 return (null, $"Error: {request.GameName} already exists");
             }
 
-            var lifeCounterDB = await this._daoDbContext
+            var gameDB = await this._daoDbContext
                                           .Games
-                                          .FirstOrDefaultAsync(a => a.Id == request.GameId);
+                                          .FirstOrDefaultAsync(a => a.Id == request.GameId && a.IsDeleted == false);
 
-            lifeCounterDB.Name = request.GameName;
-
-            if (request.LifeTotal != 0)
+            if (gameDB == null)
             {
-                lifeCounterDB.LifeTotal = request.LifeTotal;
+                return (null, "Error: game not found");
             }
+
+            gameDB.Name = request.GameName;
+            gameDB.LifeTotal = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99;
 
             await this._daoDbContext.SaveChangesAsync();
 
@@ -111,7 +112,7 @@ namespace LifeCounterAPI.Services
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
-                return (false, "Error, naming the game is mandatory");
+                return (false, "Error: informing a name for the game being edited is mandatory ");
             }
 
             if (request.GameId <= 0)
@@ -119,10 +120,15 @@ namespace LifeCounterAPI.Services
                 return (false, $"Error: invalid GameId: {request.GameId}");
             }
 
+            if (request.LifeTotal.HasValue == false)
+            {
+                return (false, "Error: informing a LifeTotal for the game being edited is mandatory");
+            }
+
             return (true, String.Empty);
         }
 
-        public async Task<(AdminsRemoveGameResponse?, string)> RemoveGame(AdminsRemoveGameRequest request)
+        public async Task<(AdminsDeleteGameResponse?, string)> DeleteGame(AdminsDeleteGameRequest request)
         {
             if (request == null || request.GameId <= 0)
             {
@@ -130,27 +136,36 @@ namespace LifeCounterAPI.Services
             }
 
             var exists = await this._daoDbContext
-                .Games
-                .AnyAsync(a => a.Id == request.GameId);
+                                   .Games
+                                   .AnyAsync(a => a.Id == request.GameId);
 
             if (exists == false)
             {
                 return (null, "Error: requested GameId does not exist");
             }
 
-            try
+            var gameDB = await this._daoDbContext
+                                   .Games
+                                   .Include(a => a.Matches)
+                                   .Where(a => a.Id == request.GameId)
+                                   .FirstOrDefaultAsync();
+            if (gameDB == null)
             {
-                var lifeCounterId = await this._daoDbContext
-                                              .Games
-                                              .Where(a => a.Id == request.GameId)
-                                              .ExecuteDeleteAsync();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to delete game: {ex.Message}", ex);
+                return (null, "Error: this game has been already deleted");
             }
 
-            return (null, "Game removed successfully");
+            var matchesDB = gameDB.Matches;
+            
+            foreach(var match in matchesDB)
+            {
+                match.IsFinished = true;
+            }
+            
+            gameDB.IsDeleted = true;
+
+            await this._daoDbContext.SaveChangesAsync();
+
+            return (null, "Game deleted successfully. All matches of this game are now set as finished");
         }
     }
 }

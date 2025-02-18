@@ -47,11 +47,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> RemoveGame(AdminsRemoveGameRequest request)
+        public async Task<IActionResult> DeleteGame(AdminsDeleteGameRequest request)
         {
-            var (content, message) = await this._adminsService.RemoveGame(request);
+            var (content, message) = await this._adminsService.DeleteGame(request);
 
-            var response = new Response<AdminsRemoveGameResponse>
+            var response = new Response<AdminsDeleteGameResponse>
             {
                 Content = content,
                 Message = message

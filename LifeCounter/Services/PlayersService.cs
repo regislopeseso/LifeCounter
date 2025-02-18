@@ -81,15 +81,18 @@ namespace LifeCounterAPI.Services
                 }
             }
 
+            var startMark = DateTime.UtcNow.ToLocalTime().Ticks;
+
             var newMatch = new Match
             {
                 GameId = request.GameId,
                 Players = newPlayers,
+                StartingTime = startMark
             };
 
             gameDB.Matches ??= new List<Match>();
 
-            gameDB.Matches.Add(newMatch);
+            gameDB.Matches.Add(newMatch);        
             
             await this._daoDbContext.SaveChangesAsync();
 
@@ -256,7 +259,9 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: match not found");
             }
             
-            var elapsedTime = DateTime.UtcNow.ToLocalTime() - matchDB.StartingTime;
+            var currentTimeMark = DateTime.UtcNow.ToLocalTime().Ticks;
+
+            var elapsedTime = currentTimeMark - matchDB.StartingTime;
 
             if(matchDB.IsFinished == true)
             {
@@ -330,28 +335,29 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: this match has been already finished previously");
             }
 
-            var timeNow = DateTime.Now;
+            var currentTimeMark = DateTime.UtcNow.ToLocalTime().Ticks;
 
-            var duration = timeNow - matchDB.StartingTime;
+            var duration = currentTimeMark - matchDB.StartingTime;           
 
             matchDB.Duration = duration;
-            matchDB.EndingTime = timeNow;
+            matchDB.EndingTime = currentTimeMark;
             matchDB.IsFinished = true;
 
             await this._daoDbContext.SaveChangesAsync();
-
-            //Caso não for desejável o envio de alguma informação mas somente "null, alterar PlayersEndMatchResponse para um objeto vazio e remove acima a inclusão de Game: ".Include(a => a.Game)"
+           
             var content = new PlayersEndMatchResponse
             {
                 GameId = matchDB.GameId,
                 GameName = matchDB.Game.Name,
                 MatchId = matchDB.Id,
                 MatchBegin = matchDB.StartingTime,
-                MatchEnd = timeNow,
-                MatchDuration = duration
+                MatchEnd = currentTimeMark,
+                MatchDuration = duration,
             };
 
-            return (content, "Match ended successfully");
+            var durationMin = duration / ((10_000_000) * 60);
+
+            return (content, $"Match ended successfully and lasted {durationMin} minutes");
         }
 
         public async Task<(PlayersShowStatsResponse?, string)> ShowStats(PlayersShowStatsRequest request)
@@ -376,10 +382,12 @@ namespace LifeCounterAPI.Services
 
             var averagePlayersPerMatch = (int)Math.Ceiling((double)(totalPlayers / countAllMachtes));
 
-            var totalLength = matchesDB.Select(a => a.Duration).Aggregate(TimeSpan.Zero, (sum, next) => sum + next);
+            var totalLength = matchesDB.Select(a => a.Duration).Sum();
 
-            var averageMatchDuration = totalLength / countAllMachtes;
+            var totalLengthMin = totalLength / (10_000_000 * 60);
 
+            var averageMatchDuration = (int)Math.Ceiling((double)(totalLengthMin / countAllMachtes));
+           
             var mostPlayedGame = matchesDB.GroupBy(a => a.GameId).OrderByDescending(a => a.Count()).Select(a => new {GameId = a.Key, Count = a.Count()}).FirstOrDefault();
 
             var gamesDB = await this._daoDbContext
@@ -387,11 +395,11 @@ namespace LifeCounterAPI.Services
                                   .Include(a => a.Matches)
                                   .ToListAsync();
             
-            var dic = new Dictionary<int, TimeSpan>();
+            var dic = new Dictionary<int, long>();
             
             foreach(var game in gamesDB)
             {
-                dic.Add(game.Id, game.Matches.Select(a => a.Duration).Aggregate(TimeSpan.Zero, (sum, next) => sum + next));
+                dic.Add(game.Id, game.Matches.Select(a => a.Duration).Sum());
             }
 
             var longestAvgMatchGame_id = dic.MaxBy(a => a.Value).Key;
@@ -409,6 +417,5 @@ namespace LifeCounterAPI.Services
 
             return (content, "Statistics showed successfully");
         }
-
     }
 }

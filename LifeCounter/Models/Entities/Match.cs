@@ -19,10 +19,9 @@ namespace LifeCounterAPI.Models.Entities
 
         public required List<Player> Players {  get; set; }
 
-        public DateTime StartingTime { get; set; } = DateTime.UtcNow.ToLocalTime();
-        public DateTime? EndingTime { get; set; }
-        public TimeSpan Duration {  get; set; } = TimeSpan.Zero;
-
+        public long StartingTime { get; set; }
+        public long EndingTime { get; set; }
+        public long Duration {  get; set; }
         public bool IsFinished { get; set; } = false;
     }
 }
