@@ -19,11 +19,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> StartGame(PlayersStartGameRequest request)
+        public async Task<IActionResult> NewMatch(PlayersNewMatchRequest request)
         {
-            var (content, message) = await this._playersService.StartGame(request);
+            var (content, message) = await this._playersService.NewMatch(request);
 
-            var response = new Response<List<PlayersStartGameResponse>>()
+            var response = new Response<PlayersNewMatchResponse>()
             {
                 Content = content,
                 Message = message

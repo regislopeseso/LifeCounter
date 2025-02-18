@@ -2,6 +2,6 @@
 {
     public class PlayersResetLifeTotalRequest
     {
-        public int GameId { get; set; }
+        public int MatchId { get; set; }        
     }
 }

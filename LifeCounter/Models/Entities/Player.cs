@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LifeCounterAPI.Models.Entities
 {
-    [Table("Players")]
+    [Table("players")]
     public class Player
     {
         [Key]
@@ -12,9 +12,10 @@ namespace LifeCounterAPI.Models.Entities
         public int StartingLifeTotal { get; set; }
 
         public int CurrentLifeTotal { get; set; }
+  
 
-        [ForeignKey("Game")]
-        public int GameId { get; set; }
-        public Game Game { get; set; }
+        [ForeignKey("Match")]
+        public int MatchId { get; set; }
+        public Match? Match { get; set; }
     }
 }

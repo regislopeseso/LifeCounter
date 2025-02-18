@@ -1,8 +1,11 @@
-﻿namespace LifeCounterAPI.Models.Dtos.Response.Players
+﻿using LifeCounterAPI.Models.Entities;
+
+namespace LifeCounterAPI.Models.Dtos.Response.Players
 {
-    public class PlayersStartGameResponse
+    public class PlayersNewMatchResponse
     {
-        public int PlayerId {  get; set; }
-        public int LifeTotal { get; set; }
+        public int GameId { get; set; }
+        public int MatchId { get; set; }
+        public List<PlayersNewMatchResponse_players> Players { get; set; }    
     }
 }

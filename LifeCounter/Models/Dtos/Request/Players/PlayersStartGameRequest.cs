@@ -2,7 +2,7 @@
 
 namespace LifeCounterAPI.Models.Dtos.Request.Players
 {
-    public class PlayersStartGameRequest
+    public class PlayersNewMatchRequest
     {
         public int GameId { get; set; }
         public int PlayersCount { get; set; }

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250218120944_ReCreateDB")]
+    [Migration("20250218125617_ReCreateDB")]
     partial class ReCreateDB
     {
         /// <inheritdoc />
@@ -43,6 +43,24 @@ namespace LifeCounterAPI.Migrations
                     b.ToTable("Games");
                 });
 
+            modelBuilder.Entity("LifeCounterAPI.Models.Entities.Match", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GameId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("Matches");
+                });
+
             modelBuilder.Entity("LifeCounterAPI.Models.Entities.Player", b =>
                 {
                     b.Property<int>("Id")
@@ -57,6 +75,9 @@ namespace LifeCounterAPI.Migrations
                     b.Property<int>("GameId")
                         .HasColumnType("int");
 
+                    b.Property<int>("MatchId")
+                        .HasColumnType("int");
+
                     b.Property<int>("StartingLifeTotal")
                         .HasColumnType("int");
 
@@ -64,13 +85,15 @@ namespace LifeCounterAPI.Migrations
 
                     b.HasIndex("GameId");
 
+                    b.HasIndex("MatchId");
+
                     b.ToTable("Players");
                 });
 
-            modelBuilder.Entity("LifeCounterAPI.Models.Entities.Player", b =>
+            modelBuilder.Entity("LifeCounterAPI.Models.Entities.Match", b =>
                 {
                     b.HasOne("LifeCounterAPI.Models.Entities.Game", "Game")
-                        .WithMany("Players")
+                        .WithMany("Matches")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -78,7 +101,31 @@ namespace LifeCounterAPI.Migrations
                     b.Navigation("Game");
                 });
 
+            modelBuilder.Entity("LifeCounterAPI.Models.Entities.Player", b =>
+                {
+                    b.HasOne("LifeCounterAPI.Models.Entities.Game", "Game")
+                        .WithMany()
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LifeCounterAPI.Models.Entities.Match", "Match")
+                        .WithMany("Players")
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Match");
+                });
+
             modelBuilder.Entity("LifeCounterAPI.Models.Entities.Game", b =>
+                {
+                    b.Navigation("Matches");
+                });
+
+            modelBuilder.Entity("LifeCounterAPI.Models.Entities.Match", b =>
                 {
                     b.Navigation("Players");
                 });
