@@ -140,5 +140,34 @@ namespace LifeCounterAPI.Services
 
             return (null, $"Player suffered {request.DamageAmount} damage");
         }
+
+        public async Task<(PlayersSetLifeTotalResponse?, string)> SetLifeTotal(PlayersSetLifeTotalRequest request)
+        {
+            if(request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            if(request.LifeValue < 0)
+            {
+                return (null, "Error: a player's life total cannot be dropped bellow zero");
+            }
+
+            var exists = await this._daoDbContext
+                                   .Players
+                                   .AnyAsync(a => a.Id == request.PlayerId);
+
+            if(exists == false)
+            {
+                return (null, "Error: invalid PlayerId");
+            }
+
+            await this._daoDbContext
+                .Players
+                .Where(a => a.Id == request.PlayerId)
+                .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, request.LifeValue));
+
+            return (null, $"Player's life successfully set to {request.LifeValue} points");
+        }
     }
 }

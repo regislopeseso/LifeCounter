@@ -15,13 +15,13 @@ namespace LifeCounterAPI.Controllers
 
         public PlayersController(PlayersService playersService)
         {
-            _playersService = playersService;
+            this._playersService = playersService;
         }
 
         [HttpPost]
         public async Task<IActionResult> StartGame(PlayersStartGameRequest request)
         {
-            var (content, message) = await _playersService.StartGame(request);
+            var (content, message) = await this._playersService.StartGame(request);
 
             var response = new Response<List<PlayersStartGameResponse>>()
             {
@@ -32,10 +32,10 @@ namespace LifeCounterAPI.Controllers
             return new JsonResult(response);
         }
 
-        [HttpPost]
+        [HttpPut]
         public async Task<IActionResult> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
         {
-            var (content, message) = await _playersService.IncreaseLifeTotal(request);
+            var (content, message) = await this._playersService.IncreaseLifeTotal(request);
 
             var response = new Response<PlayersIncreaseLifeTotalResponse>()
             {
@@ -46,12 +46,26 @@ namespace LifeCounterAPI.Controllers
             return new JsonResult(response);
         }
 
-        [HttpPost]
+        [HttpPut]
         public async Task<IActionResult> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
         {
-            var (content, message) = await _playersService.DecreaseLifeTotal(request);
+            var (content, message) = await this._playersService.DecreaseLifeTotal(request);
 
             var response = new Response<PlayersDecreaseLifeTotalResponse>()
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> SetLifeTotal(PlayersSetLifeTotalRequest request)
+        {
+            var (content, message) = await this._playersService.SetLifeTotal(request);
+
+            var response = new Response<PlayersSetLifeTotalResponse>()
             {
                 Content = content,
                 Message = message
