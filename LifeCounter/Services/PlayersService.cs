@@ -2,6 +2,7 @@
 using LifeCounterAPI.Models.Dtos.Response.Players;
 using LifeCounterAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using System.Security.Cryptography.X509Certificates;
 
 namespace LifeCounterAPI.Services
@@ -89,8 +90,8 @@ namespace LifeCounterAPI.Services
             gameDB.Matches ??= new List<Match>();
 
             gameDB.Matches.Add(newMatch);
-
-            await _daoDbContext.SaveChangesAsync();
+            
+            await this._daoDbContext.SaveChangesAsync();
 
             var content = new PlayersNewMatchResponse();
             content.GameId = newMatch.GameId;
@@ -248,7 +249,19 @@ namespace LifeCounterAPI.Services
             var matchDB = await this._daoDbContext
                                     .Matches
                                     .Include(a => a.Players)
-                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);          
+                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
+
+            if (matchDB == null)
+            {
+                return (null, "Error: match not found");
+            }
+            
+            var elapsedTime = DateTime.UtcNow.ToLocalTime() - matchDB.StartingTime;
+
+            if(matchDB.IsFinished == true)
+            {
+                elapsedTime = matchDB.Duration;
+            }
 
             var content = new PlayersShowMatchStatusResponse();
 
@@ -266,6 +279,8 @@ namespace LifeCounterAPI.Services
                 });
             }
 
+            content.ElapsedTime = elapsedTime;
+
             content.IsFinished = matchDB.IsFinished;
 
             var countAllPlayers = matchDB.Players.Count;
@@ -277,7 +292,9 @@ namespace LifeCounterAPI.Services
                 await this._daoDbContext
                           .Matches
                           .Where(a => a.Id == request.MatchId)
-                          .ExecuteUpdateAsync(a => a.SetProperty(b => b.IsFinished, true));
+                          .ExecuteUpdateAsync(a => a
+                          .SetProperty(b => b.Duration, elapsedTime)
+                          .SetProperty(b => b.IsFinished, true));                
 
                 content.IsFinished = true;
             }
@@ -297,12 +314,47 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: invalid MatchId");
             }
 
-            await this._daoDbContext
-                      .Matches
-                      .Where(a => a.Id == request.MatchId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.IsFinished, true));
 
-            return (null, "Match ended successfully");
+            var matchDB = await this._daoDbContext
+                                    .Matches
+                                    .Include(a => a.Game)
+                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
+
+            if(matchDB == null)
+            {
+                return (null, "Error: match not found");
+            }
+
+            if(matchDB.IsFinished == true)
+            {
+                return (null, "Error: this match has been already finished previously");
+            }
+
+            var timeNow = DateTime.Now;
+
+            var duration = timeNow - matchDB.StartingTime;
+
+            matchDB.Duration = duration;
+            matchDB.EndingTime = timeNow;
+            matchDB.IsFinished = true;
+
+            await this._daoDbContext.SaveChangesAsync();
+
+            //Caso não for desejável o envio de alguma informação mas somente "null, alterar PlayersEndMatchResponse para um objeto vazio e remove acima a inclusão de Game: ".Include(a => a.Game)"
+            var content = new PlayersEndMatchResponse
+            {
+                GameId = matchDB.GameId,
+                GameName = matchDB.Game.Name,
+                MatchId = matchDB.Id,
+                MatchBegin = matchDB.StartingTime,
+                MatchEnd = timeNow,
+                MatchDuration = duration
+            };
+
+            return (content, "Match ended successfully");
         }
+
+
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LifeCounterAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class ReCreateDB : Migration
+    public partial class Migration1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,7 +16,7 @@ namespace LifeCounterAPI.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Games",
+                name: "games",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -26,72 +27,64 @@ namespace LifeCounterAPI.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Games", x => x.Id);
+                    table.PrimaryKey("PK_games", x => x.Id);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Matches",
+                name: "matches",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    GameId = table.Column<int>(type: "int", nullable: false)
+                    GameId = table.Column<int>(type: "int", nullable: false),
+                    StartingTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    EndingTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    Duration = table.Column<TimeSpan>(type: "time(6)", nullable: false),
+                    IsFinished = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Matches", x => x.Id);
+                    table.PrimaryKey("PK_matches", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Matches_Games_GameId",
+                        name: "FK_matches_games_GameId",
                         column: x => x.GameId,
-                        principalTable: "Games",
+                        principalTable: "games",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
-                name: "Players",
+                name: "players",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     StartingLifeTotal = table.Column<int>(type: "int", nullable: false),
                     CurrentLifeTotal = table.Column<int>(type: "int", nullable: false),
-                    GameId = table.Column<int>(type: "int", nullable: false),
                     MatchId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Players", x => x.Id);
+                    table.PrimaryKey("PK_players", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Players_Games_GameId",
-                        column: x => x.GameId,
-                        principalTable: "Games",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Players_Matches_MatchId",
+                        name: "FK_players_matches_MatchId",
                         column: x => x.MatchId,
-                        principalTable: "Matches",
+                        principalTable: "matches",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 })
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Matches_GameId",
-                table: "Matches",
+                name: "IX_matches_GameId",
+                table: "matches",
                 column: "GameId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Players_GameId",
-                table: "Players",
-                column: "GameId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Players_MatchId",
-                table: "Players",
+                name: "IX_players_MatchId",
+                table: "players",
                 column: "MatchId");
         }
 
@@ -99,13 +92,13 @@ namespace LifeCounterAPI.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Players");
+                name: "players");
 
             migrationBuilder.DropTable(
-                name: "Matches");
+                name: "matches");
 
             migrationBuilder.DropTable(
-                name: "Games");
+                name: "games");
         }
     }
 }
