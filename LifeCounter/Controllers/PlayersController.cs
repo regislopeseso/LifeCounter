@@ -73,5 +73,21 @@ namespace LifeCounterAPI.Controllers
 
             return new JsonResult(response);
         }
+
+        [HttpPut]
+        public async Task<IActionResult> ResetLifeTotal(PlayersResetLifeTotalRequest request)
+        {
+            var (content, message) = await this._playersService.ResetLifeTotal(request);
+
+            var response = new Response<PlayersResetLifeTotalResponse>()
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
+
+
     }
 }

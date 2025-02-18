@@ -42,16 +42,28 @@ namespace LifeCounterAPI.Services
                 {
                     if (lifeTotal == 0)
                     {
-                        newPlayers.Add(new Player { LifeTotal = gameDB.LifeTotal });
+                        newPlayers.Add(new Player 
+                        { 
+                            StartingLifeTotal = gameDB.LifeTotal,
+                            CurrentLifeTotal = gameDB.LifeTotal 
+                        });
                     }
                     else
                     {
-                        newPlayers.Add(new Player { LifeTotal = lifeTotal });
+                        newPlayers.Add(new Player 
+                        {
+                            StartingLifeTotal = lifeTotal,
+                            CurrentLifeTotal = lifeTotal 
+                        });
                     }
                 }
                 for (int i = 0; i < request.PlayersCount - request.PlayersLifeTotals.Count; i++)
                 {
-                    newPlayers.Add(new Player { LifeTotal = gameDB.LifeTotal });
+                    newPlayers.Add(new Player 
+                    {
+                        StartingLifeTotal = gameDB.LifeTotal,
+                        CurrentLifeTotal = gameDB.LifeTotal 
+                    });
                 }
 
             }
@@ -59,7 +71,11 @@ namespace LifeCounterAPI.Services
             {
                 for (int i = 0; i < request.PlayersCount; i++)
                 {
-                    newPlayers.Add(new Player { LifeTotal = gameDB.LifeTotal });
+                    newPlayers.Add(new Player 
+                    { 
+                        StartingLifeTotal = gameDB.LifeTotal,
+                        CurrentLifeTotal = gameDB.LifeTotal 
+                    });
                 }
             }
 
@@ -75,7 +91,7 @@ namespace LifeCounterAPI.Services
                 content.Add(new PlayersStartGameResponse
                 {
                     PlayerId = newPlayer.Id,
-                    LifeTotal = newPlayer.LifeTotal,
+                    LifeTotal = newPlayer.CurrentLifeTotal,
                 });
             }
 
@@ -107,7 +123,7 @@ namespace LifeCounterAPI.Services
             await this._daoDbContext
                       .Players
                       .Where(a => a.Id == request.PlayerId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, b => b.LifeTotal + request.HealingAmount));
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.CurrentLifeTotal + request.HealingAmount));
 
             return (null, $"Player healed {request.HealingAmount}");
         }
@@ -136,7 +152,7 @@ namespace LifeCounterAPI.Services
             await this._daoDbContext
                       .Players
                       .Where(a => a.Id == request.PlayerId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, b => b.LifeTotal - request.DamageAmount));
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.CurrentLifeTotal - request.DamageAmount));
 
             return (null, $"Player suffered {request.DamageAmount} damage");
         }
@@ -165,9 +181,44 @@ namespace LifeCounterAPI.Services
             await this._daoDbContext
                 .Players
                 .Where(a => a.Id == request.PlayerId)
-                .ExecuteUpdateAsync(a => a.SetProperty(b => b.LifeTotal, request.LifeValue));
+                .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, request.LifeValue));
 
             return (null, $"Player's life successfully set to {request.LifeValue} points");
+        }
+
+        public async Task<(PlayersResetLifeTotalResponse?, string)> ResetLifeTotal(PlayersResetLifeTotalRequest request)
+        {
+            if(request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            if(request.GameId <= 0)
+            {
+                return (null, "Error: invalid GameId");
+            }
+
+            var gameDB = await this._daoDbContext
+                                   .Games
+                                   .Include(a => a.Players)
+                                   .FirstOrDefaultAsync(a => a.Id == request.GameId);
+
+            if(gameDB == null)
+            {
+                return (null, "Error: game not found");
+            }
+
+            if(gameDB.Players == null || gameDB.Players.Count == 0)
+            {
+                return (null, "Error: no players joined this game");
+            }
+
+            await this._daoDbContext
+                      .Players
+                      .Where(a => a.GameId == request.GameId)
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.StartingLifeTotal));
+
+            return (null, "All Players life total reset to their starting life total");
         }
     }
 }

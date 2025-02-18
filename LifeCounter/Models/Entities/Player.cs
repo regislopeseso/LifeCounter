@@ -9,7 +9,12 @@ namespace LifeCounterAPI.Models.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
+        public int StartingLifeTotal { get; set; }
 
-        public int LifeTotal { get; set; }
+        public int CurrentLifeTotal { get; set; }
+
+        [ForeignKey("Game")]
+        public int GameId { get; set; }
+        public Game Game { get; set; }
     }
 }
