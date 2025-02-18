@@ -39,7 +39,7 @@ namespace LifeCounterAPI.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     GameId = table.Column<int>(type: "int", nullable: false),
                     StartingTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    EndingTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
+                    EndingTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
                     Duration = table.Column<TimeSpan>(type: "time(6)", nullable: false),
                     IsFinished = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },

@@ -2,6 +2,6 @@
 {
     public class AdminsRemoveGameRequest
     {
-        public int LifeCounterId { get; set; }
+        public int GameId { get; set; }
     }
 }

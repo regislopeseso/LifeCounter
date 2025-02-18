@@ -37,7 +37,7 @@ namespace LifeCounterAPI.Services
 
             if (exists == true)
             {
-                return (null, $"Error: a Life Counter for the game: {request.GameName} already exists");
+                return (null, $"Error: {request.GameName} already exists");
             }
 
 
@@ -55,7 +55,7 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, "New Life Counter created successfully");
+            return (null, "New game created successfully");
         }
 
         public static (bool, string) CreateIsValid(AdminsCreateGameRequest request)
@@ -84,16 +84,16 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                 .Games
-                .AnyAsync(a => a.Name == request.GameName && a.Id != request.LifeCounterId);
+                .AnyAsync(a => a.Name == request.GameName && a.Id != request.GameId);
 
             if (exists == true)
             {
-                return (null, $"Error: a Life Counter for the game: {request.GameName} already exists");
+                return (null, $"Error: {request.GameName} already exists");
             }
 
             var lifeCounterDB = await this._daoDbContext
                                           .Games
-                                          .FirstOrDefaultAsync(a => a.Id == request.LifeCounterId);
+                                          .FirstOrDefaultAsync(a => a.Id == request.GameId);
 
             lifeCounterDB.Name = request.GameName;
 
@@ -104,7 +104,7 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, "Life Counter edited successfully");
+            return (null, "Game edited successfully");
         }
 
         public static (bool, string) EditIsValid(AdminsEditGameRequest request)
@@ -114,9 +114,9 @@ namespace LifeCounterAPI.Services
                 return (false, "Error, naming the game is mandatory");
             }
 
-            if (request.LifeCounterId <= 0)
+            if (request.GameId <= 0)
             {
-                return (false, $"Error: invalid LifeCounterId: {request.LifeCounterId}");
+                return (false, $"Error: invalid GameId: {request.GameId}");
             }
 
             return (true, String.Empty);
@@ -124,33 +124,33 @@ namespace LifeCounterAPI.Services
 
         public async Task<(AdminsRemoveGameResponse?, string)> RemoveGame(AdminsRemoveGameRequest request)
         {
-            if (request == null || request.LifeCounterId <= 0)
+            if (request == null || request.GameId <= 0)
             {
-                return (null, "Error: invalid LifeCounterId");
+                return (null, "Error: invalid GameId");
             }
 
             var exists = await this._daoDbContext
                 .Games
-                .AnyAsync(a => a.Id == request.LifeCounterId);
+                .AnyAsync(a => a.Id == request.GameId);
 
             if (exists == false)
             {
-                return (null, "Error: requested LifeCounterId does not exist");
+                return (null, "Error: requested GameId does not exist");
             }
 
             try
             {
                 var lifeCounterId = await this._daoDbContext
                                               .Games
-                                              .Where(a => a.Id == request.LifeCounterId)
+                                              .Where(a => a.Id == request.GameId)
                                               .ExecuteDeleteAsync();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to delete Life Counter: {ex.Message}", ex);
+                throw new Exception($"Failed to delete game: {ex.Message}", ex);
             }
 
-            return (null, "Life Counter removed successfully");
+            return (null, "Game removed successfully");
         }
     }
 }

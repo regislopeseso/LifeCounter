@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250218165041_Migration1")]
+    [Migration("20250218190533_Migration1")]
     partial class Migration1
     {
         /// <inheritdoc />
@@ -55,7 +55,7 @@ namespace LifeCounterAPI.Migrations
                     b.Property<TimeSpan>("Duration")
                         .HasColumnType("time(6)");
 
-                    b.Property<DateTime>("EndingTime")
+                    b.Property<DateTime?>("EndingTime")
                         .HasColumnType("datetime(6)");
 
                     b.Property<int>("GameId")

@@ -354,7 +354,61 @@ namespace LifeCounterAPI.Services
             return (content, "Match ended successfully");
         }
 
+        public async Task<(PlayersShowStatsResponse?, string)> ShowStats(PlayersShowStatsRequest request)
+        {
+            var matchesDB = await this._daoDbContext
+                                      .Matches.Include(a => a.Players)
+                                      .Where(a => a.IsFinished == true)
+                                      .ToListAsync();
 
+            if(matchesDB == null || matchesDB.Count == 0)
+            {
+                return (null, "Error: no was match found");
+            }
+
+            var countAllMachtes = matchesDB.Count;
+
+            if(countAllMachtes == 0)
+            {
+                return (null, "Error: no players found for the registered matches");
+            }
+            var totalPlayers = matchesDB.Select(a => a.Players.Count).Sum();      
+
+            var averagePlayersPerMatch = (int)Math.Ceiling((double)(totalPlayers / countAllMachtes));
+
+            var totalLength = matchesDB.Select(a => a.Duration).Aggregate(TimeSpan.Zero, (sum, next) => sum + next);
+
+            var averageMatchDuration = totalLength / countAllMachtes;
+
+            var mostPlayedGame = matchesDB.GroupBy(a => a.GameId).OrderByDescending(a => a.Count()).Select(a => new {GameId = a.Key, Count = a.Count()}).FirstOrDefault();
+
+            var gamesDB = await this._daoDbContext
+                                  .Games
+                                  .Include(a => a.Matches)
+                                  .ToListAsync();
+            
+            var dic = new Dictionary<int, TimeSpan>();
+            
+            foreach(var game in gamesDB)
+            {
+                dic.Add(game.Id, game.Matches.Select(a => a.Duration).Aggregate(TimeSpan.Zero, (sum, next) => sum + next));
+            }
+
+            var longestAvgMatchGame_id = dic.MaxBy(a => a.Value).Key;
+            var longestAvgMatchGame_name = gamesDB.Where(a => a.Id == longestAvgMatchGame_id).Select(a => a.Name).FirstOrDefault();
+
+            var content = new PlayersShowStatsResponse
+            {
+                CountMatches = countAllMachtes,
+                MatchesAvgPlayerCount = averagePlayersPerMatch,
+                MatchesAvgDuration = averageMatchDuration,
+                MostPlayedGameId = mostPlayedGame.GameId,
+                LongestAvgMatchGame_id = longestAvgMatchGame_id,
+                LongestAvgMatchGame_name = longestAvgMatchGame_name
+            };
+
+            return (content, "Statistics showed successfully");
+        }
 
     }
 }

@@ -102,12 +102,26 @@ namespace LifeCounterAPI.Controllers
             return new JsonResult(response);
         }
 
-        [HttpPut]
+        [HttpDelete]
         public async Task<IActionResult> EndMatch(PlayersEndMatchRequest request)
         {
             var (content, message) = await this._playersService.EndMatch(request);
 
             var response = new Response<PlayersEndMatchResponse>()
+            {
+                Content = content,
+                Message = message
+            };
+
+            return new JsonResult(response);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ShowStats(PlayersShowStatsRequest request)
+        {
+            var (content, message) = await this._playersService.ShowStats(request);
+
+            var response = new Response<PlayersShowStatsResponse>()
             {
                 Content = content,
                 Message = message
