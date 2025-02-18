@@ -22,7 +22,7 @@ namespace LifeCounterAPI.Models.Entities
         public DateTime StartingTime { get; set; } = DateTime.UtcNow.ToLocalTime();
         public DateTime? EndingTime { get; set; }
         public TimeSpan Duration {  get; set; } = TimeSpan.Zero;
-
+        public int test {  get; set; }
         public bool IsFinished { get; set; } = false;
     }
 }
