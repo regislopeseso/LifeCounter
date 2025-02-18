@@ -5,9 +5,8 @@
         public int GameId { get; set; }
         public string GameName { get; set; }
         public int MatchId { get; set; }
-        public DateTime MatchBegin {get; set;}
-        public DateTime MatchEnd {get; set;}
-        public TimeSpan MatchDuration { get; set;} = TimeSpan.Zero;
-        
+        public long MatchBegin {get; set;}
+        public long MatchEnd {get; set;}
+        public long MatchDuration { get; set;}   
     }
 }

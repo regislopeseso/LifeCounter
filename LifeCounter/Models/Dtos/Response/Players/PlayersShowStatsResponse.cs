@@ -4,7 +4,7 @@
     {
         public int CountMatches { get; set; }
         public int MatchesAvgPlayerCount { get; set; }
-        public TimeSpan MatchesAvgDuration { get; set; } = TimeSpan.Zero;
+        public int MatchesAvgDuration { get; set; }
 
         public int MostPlayedGameId { get; set; }
         public int LongestAvgMatchGame_id { get; set; }

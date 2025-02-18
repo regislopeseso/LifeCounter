@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
+﻿using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -38,9 +37,9 @@ namespace LifeCounterAPI.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     GameId = table.Column<int>(type: "int", nullable: false),
-                    StartingTime = table.Column<DateTime>(type: "datetime(6)", nullable: false),
-                    EndingTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    Duration = table.Column<TimeSpan>(type: "time(6)", nullable: false),
+                    StartingTime = table.Column<long>(type: "bigint", nullable: false),
+                    EndingTime = table.Column<long>(type: "bigint", nullable: false),
+                    Duration = table.Column<long>(type: "bigint", nullable: false),
                     IsFinished = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
