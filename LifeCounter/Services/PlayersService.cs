@@ -2,6 +2,7 @@
 using LifeCounterAPI.Models.Dtos.Response.Players;
 using LifeCounterAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace LifeCounterAPI.Services
 {
@@ -77,17 +78,17 @@ namespace LifeCounterAPI.Services
                         CurrentLifeTotal = gameDB.LifeTotal
                     });
                 }
-            }  
+            }
 
             var newMatch = new Match
             {
                 GameId = request.GameId,
                 Players = newPlayers,
             };
-            
+
             gameDB.Matches ??= new List<Match>();
 
-            gameDB.Matches.Add(newMatch); 
+            gameDB.Matches.Add(newMatch);
 
             await _daoDbContext.SaveChangesAsync();
 
@@ -96,7 +97,7 @@ namespace LifeCounterAPI.Services
             content.MatchId = newMatch.Id;
             content.Players = new List<PlayersNewMatchResponse_players>() { };
             foreach (var newPlayer in newPlayers)
-            {              
+            {
                 content.Players.Add(new PlayersNewMatchResponse_players
                 {
                     PlayerId = newPlayer.Id,
@@ -104,7 +105,7 @@ namespace LifeCounterAPI.Services
                 });
             }
 
-            return (content, $"{gameDB.Name} match started with {newPlayers.Count} players");
+            return (content, $"New {gameDB.Name} match started with {newPlayers.Count} players");
         }
 
         public async Task<(PlayersIncreaseLifeTotalResponse?, string)> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
@@ -116,7 +117,8 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Players
-                                   .AnyAsync(a => a.Id == request.PlayerId);
+                                   .Include(a => a.Match)
+                                   .AnyAsync(a => a.Id == request.PlayerId && a.Match.IsFinished == false);
 
             if (exists == false)
             {
@@ -145,7 +147,8 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Players
-                                   .AnyAsync(a => a.Id == request.PlayerId);
+                                   .Include(a => a.Match)
+                                   .AnyAsync(a => a.Id == request.PlayerId && a.Match.IsFinished == false);
 
             if (exists == false)
             {
@@ -179,7 +182,8 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Players
-                                   .AnyAsync(a => a.Id == request.PlayerId);
+                                   .Include(a => a.Match)
+                                   .AnyAsync(a => a.Id == request.PlayerId && a.Match.IsFinished == false);
 
             if (exists == false)
             {
@@ -207,9 +211,9 @@ namespace LifeCounterAPI.Services
             }
 
             var matchDB = await this._daoDbContext
-                                   .Matches                                                      
+                                   .Matches
                                    .Include(a => a.Players)
-                                   .FirstOrDefaultAsync(a => a.Id == request.MatchId);
+                                   .FirstOrDefaultAsync(a => a.Id == request.MatchId && a.IsFinished == false);
 
             if (matchDB == null)
             {
@@ -227,6 +231,78 @@ namespace LifeCounterAPI.Services
                       .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.StartingLifeTotal));
 
             return (null, "All Players life total reset to their starting life total");
+        }
+
+        public async Task<(PlayersShowMatchStatusResponse?, string)> ShowMatchStatus(PlayersShowMatchStatusRequest request)
+        {
+            if (request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            if (request.MatchId <= 0)
+            {
+                return (null, "Error: invalid MatchiId");
+            }
+
+            var matchDB = await this._daoDbContext
+                                    .Matches
+                                    .Include(a => a.Players)
+                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);          
+
+            var content = new PlayersShowMatchStatusResponse();
+
+            content.GameId = matchDB.GameId;
+
+            content.MatchId = matchDB.Id;
+
+            content.Players = new List<PlayersShowMatchStatusResponse_players>() { };
+            foreach (var player in matchDB.Players)
+            {
+                content.Players.Add(new PlayersShowMatchStatusResponse_players
+                {
+                    PlayerId = player.Id,
+                    CurrentLifeTotal = player.CurrentLifeTotal,
+                });
+            }
+
+            content.IsFinished = matchDB.IsFinished;
+
+            var countAllPlayers = matchDB.Players.Count;
+
+            var countDefeatedPlayers = matchDB.Players.Where(a => a.CurrentLifeTotal == 0).Count();
+
+            if (countAllPlayers - countDefeatedPlayers <= 1)
+            {
+                await this._daoDbContext
+                          .Matches
+                          .Where(a => a.Id == request.MatchId)
+                          .ExecuteUpdateAsync(a => a.SetProperty(b => b.IsFinished, true));
+
+                content.IsFinished = true;
+            }
+
+            return (content, $"Match id {matchDB.Id} status showed successfully");
+        }
+
+        public async Task<(PlayersEndMatchResponse?, string)> EndMatch(PlayersEndMatchRequest request)
+        {
+            if (request == null)
+            {
+                return (null, "Error: no information provided");
+            }
+
+            if(request.MatchId <= 0)
+            {
+                return (null, "Error: invalid MatchId");
+            }
+
+            await this._daoDbContext
+                      .Matches
+                      .Where(a => a.Id == request.MatchId)
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.IsFinished, true));
+
+            return (null, "Match ended successfully");
         }
     }
 }

@@ -16,7 +16,9 @@ namespace LifeCounterAPI.Models.Entities
         // Razão: ser possível acessar um objeto match a partir de Game
         // [InverseProperty("Match")]
         public Game Game {  get; set; }
+
         public required List<Player> Players {  get; set; }
 
+        public bool IsFinished { get; set; } = false;
     }
 }
