@@ -87,6 +87,7 @@ namespace LifeCounterAPI.Services
             {
                 GameId = request.GameId,
                 Players = newPlayers,
+                PlayersCount = newPlayers.Count,
                 StartingTime = startMark
             };
 
@@ -144,32 +145,54 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersDecreaseLifeTotalResponse?, string)> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
         {
-            if (request == null)
+            var matchDB = await this._daoDbContext
+                                    .Matches
+                                    .Include(a => a.Players)
+                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
+
+            var playersDB = matchDB.Players;
+
+            var listOfPlayerIds = playersDB.Select(a => a.Id).ToList();
+            var message = $"All players suffered {request.DamageAmount} damage. ";
+
+            if (request.PlayerIds.Count != 0)
             {
-                return (null, "Error: no information provided");
+                listOfPlayerIds = request.PlayerIds;
+                if (request.PlayerIds.Count == 1)
+                {
+                    message = $"Player (id = {listOfPlayerIds[0]}) suffered {request.DamageAmount} damage.";
+                }
+                else
+                {
+                    message = $"Players (ids = {string.Join(", ", listOfPlayerIds)}) suffered {request.DamageAmount} damage.";
+                }
             }
 
-            var exists = await this._daoDbContext
-                                   .Players
-                                   .Include(a => a.Match)
-                                   .AnyAsync(a => a.Id == request.PlayerId && a.Match.IsFinished == false);
-
-            if (exists == false)
+            foreach (var playerId in listOfPlayerIds)
             {
-                return (null, "Error: invalid PlayerId");
+                var playerDB = playersDB.Where(a => a.Id == playerId).FirstOrDefault();
+                playerDB.CurrentLifeTotal -= request.DamageAmount;
             }
 
-            if (request.DamageAmount <= 0)
+            await this._daoDbContext.SaveChangesAsync();
+
+            var defeatedPlayersCount = playersDB.Where(a => a.CurrentLifeTotal <= 0).Count();
+
+            var isFinished = matchDB.PlayersCount - defeatedPlayersCount <= 1;
+
+            
+
+            if (isFinished == true)
             {
-                return (null, "Error: invalid healing");
+                var (isFinishSucessful, gameOverMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
+                if (isFinishSucessful == false)
+                {
+                    return (null, gameOverMessage);
+                }
+                message += gameOverMessage;
             }
 
-            await this._daoDbContext
-                      .Players
-                      .Where(a => a.Id == request.PlayerId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.CurrentLifeTotal - request.DamageAmount));
-
-            return (null, $"Player suffered {request.DamageAmount} damage");
+            return (null, message.Trim());
         }
 
         public async Task<(PlayersSetLifeTotalResponse?, string)> SetLifeTotal(PlayersSetLifeTotalRequest request)

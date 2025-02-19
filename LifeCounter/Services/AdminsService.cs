@@ -1,7 +1,6 @@
 ﻿using LifeCounterAPI.Models.Dtos.Request.Admin;
 using LifeCounterAPI.Models.Dtos.Response.Admin;
 using LifeCounterAPI.Models.Entities;
-using LifeCounterAPI.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -130,6 +129,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(AdminsDeleteGameResponse?, string)> DeleteGame(AdminsDeleteGameRequest request)
         {
+
             if (request == null || request.GameId <= 0)
             {
                 return (null, "Error: invalid GameId");
@@ -146,26 +146,25 @@ namespace LifeCounterAPI.Services
 
             var gameDB = await this._daoDbContext
                                    .Games
-                                   .Include(a => a.Matches)
                                    .Where(a => a.Id == request.GameId)
                                    .FirstOrDefaultAsync();
             if (gameDB == null)
             {
                 return (null, "Error: this game has been already deleted");
             }
+                     
+            var (areMatchesFinished, message) = await MatchesService.FinishMatch(_daoDbContext, request.GameId);
 
-            var matchesDB = gameDB.Matches;
-            
-            foreach(var match in matchesDB)
+            if (areMatchesFinished == false)
             {
-                match.IsFinished = true;
+                return (null,  message);
             }
-            
+
             gameDB.IsDeleted = true;
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, "Game deleted successfully. All matches of this game are now set as finished");
+            return (null, "Game deleted successfully. " + message);
         }
     }
 }

@@ -38,6 +38,7 @@ namespace LifeCounterAPI.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     GameId = table.Column<int>(type: "int", nullable: false),
+                    PlayersCount = table.Column<int>(type: "int", nullable: false),
                     StartingTime = table.Column<long>(type: "bigint", nullable: false),
                     EndingTime = table.Column<long>(type: "bigint", nullable: false),
                     Duration = table.Column<long>(type: "bigint", nullable: false),

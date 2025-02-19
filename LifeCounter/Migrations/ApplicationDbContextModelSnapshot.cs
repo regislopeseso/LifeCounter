@@ -63,6 +63,9 @@ namespace LifeCounterAPI.Migrations
                     b.Property<bool>("IsFinished")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<int>("PlayersCount")
+                        .HasColumnType("int");
+
                     b.Property<long>("StartingTime")
                         .HasColumnType("bigint");
 
