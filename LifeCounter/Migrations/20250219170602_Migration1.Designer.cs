@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250218202348_Migration1")]
+    [Migration("20250219170602_Migration1")]
     partial class Migration1
     {
         /// <inheritdoc />
@@ -30,6 +30,9 @@ namespace LifeCounterAPI.Migrations
                         .HasColumnType("int");
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("LifeTotal")
                         .HasColumnType("int");

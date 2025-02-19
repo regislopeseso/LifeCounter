@@ -1,6 +1,6 @@
 ﻿namespace LifeCounterAPI.Models.Dtos.Request.Admin
 {
-    public class AdminsRemoveGameRequest
+    public class AdminsDeleteGameRequest
     {
         public int GameId { get; set; }
     }

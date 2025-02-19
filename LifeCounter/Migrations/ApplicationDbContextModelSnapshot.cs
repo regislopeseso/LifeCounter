@@ -28,6 +28,9 @@ namespace LifeCounterAPI.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("LifeTotal")
                         .HasColumnType("int");
 

@@ -12,11 +12,13 @@ namespace LifeCounterAPI.Models.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public required string Name { get; set; }
-        public int LifeTotal { get; set; } = Constants.DefaultLifeTotal;
+        public required int LifeTotal { get; set; }
 
         // Aqui talvez será necessário acrescentar o conceito de inverse property
         // Razão: ser possível acessar um objeto match a partir de Game
         // [InverseProperty("Game")]
         public List<Match>? Matches { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
     }
 }
