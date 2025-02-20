@@ -1,8 +1,10 @@
 ﻿using LifeCounterAPI.Models.Dtos.Request.Admin;
 using LifeCounterAPI.Models.Dtos.Response.Admin;
 using LifeCounterAPI.Models.Entities;
+using Microsoft.AspNetCore.Connections;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection.Metadata.Ecma335;
 
 namespace LifeCounterAPI.Services
 {
@@ -17,12 +19,7 @@ namespace LifeCounterAPI.Services
         }
 
         public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest request)
-        {
-            if (request == null)
-            {
-                return (null, "Error: no information provided");
-            }
-
+        {          
             var (isValid, message) = CreateIsValid(request);
 
             if (isValid == false)
@@ -43,6 +40,7 @@ namespace LifeCounterAPI.Services
             {
                 Name = request.GameName,
                 LifeTotal = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
+                FixedMaxLife = request.FixedLifeTotal.HasValue == true ? request.FixedLifeTotal.HasValue : false,
             };
 
             this._daoDbContext.Add(newGame);
@@ -54,6 +52,11 @@ namespace LifeCounterAPI.Services
 
         public static (bool, string) CreateIsValid(AdminsCreateGameRequest request)
         {
+            if (request == null)
+            {
+                return (false, "Error: no information provided");
+            }
+
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
                 return (false, "Error: informing a name for the new game is mandatory ");
@@ -62,6 +65,11 @@ namespace LifeCounterAPI.Services
             if (request.LifeTotal.HasValue == false)
             {
                 return (false, "Error: informing a LifeTotal for the new game is mandatory");
+            }
+
+            if(request.FixedLifeTotal == null)
+            {
+                return (false, "Error: informing if the game has max life total fixed or not is mandary. Inform either: 1 - yes or 0 - no.");
             }
 
             return (true, String.Empty);

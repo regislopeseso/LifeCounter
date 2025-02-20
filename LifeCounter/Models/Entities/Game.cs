@@ -13,7 +13,7 @@ namespace LifeCounterAPI.Models.Entities
         public int Id { get; set; }
         public required string Name { get; set; }
         public required int LifeTotal { get; set; }
-
+        public required bool FixedMaxLife { get; set; }
         // Aqui talvez será necessário acrescentar o conceito de inverse property
         // Razão: ser possível acessar um objeto match a partir de Game
         // [InverseProperty("Game")]

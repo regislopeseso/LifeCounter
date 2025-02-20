@@ -129,9 +129,25 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersIncreaseLifeTotalResponse?, string)> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
         {
+            var (requestIsValid, message) = await IncreaseLifeTotalRequestIsValid(request);
+
+            if (requestIsValid == false)
+            {
+                return (null, message);
+            }
+
+            await this._daoDbContext
+                      .Players
+                      .Where(a => a.Id == request.PlayerId)
+                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.CurrentLifeTotal + request.HealingAmount));
+
+            return (null, $"Player healed {request.HealingAmount}");
+        }
+        private async Task<(bool, string)> IncreaseLifeTotalRequestIsValid(PlayersIncreaseLifeTotalRequest request)
+        {
             if (request == null)
             {
-                return (null, "Error: no information provided");
+                return (false, "Error: no information provided");
             }
 
             var exists = await this._daoDbContext
@@ -141,20 +157,23 @@ namespace LifeCounterAPI.Services
 
             if (exists == false)
             {
-                return (null, "Error: invalid PlayerId");
+                return (false, "Error: invalid PlayerId");
             }
 
             if (request.HealingAmount <= 0)
             {
-                return (null, "Error: invalid healing");
+                return (false, "Error: invalid healing");
             }
 
-            await this._daoDbContext
-                      .Players
-                      .Where(a => a.Id == request.PlayerId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLifeTotal, b => b.CurrentLifeTotal + request.HealingAmount));
+            var isMaxLifeFixed = await this._daoDbContext
+                .Games
+                .Where(a => a.IsDeleted == false && a.Matches.Any(b => b.IsFinished == false &&
+                                                    b.Players.Any(c => 
+                                                    c.IsDeleted == false && c.Id == request.PlayerId)))
+                .Select(a => a.FixedMaxLife == true)
+                .FirstOrDefaultAsync();
 
-            return (null, $"Player healed {request.HealingAmount}");
+            return (true, string.Empty);
         }
 
         public async Task<(PlayersDecreaseLifeTotalResponse?, string)> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
