@@ -15,5 +15,7 @@ namespace LifeCounterAPI.Models.Entities
         [ForeignKey("Match")]
         public int MatchId { get; set; }
         public Match? Match { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
     }
 }

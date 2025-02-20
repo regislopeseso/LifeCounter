@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250219201446_Migration1")]
-    partial class Migration1
+    [Migration("20250220132600_Mi1")]
+    partial class Mi1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,6 +89,9 @@ namespace LifeCounterAPI.Migrations
 
                     b.Property<int>("CurrentLifeTotal")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<int>("MatchId")
                         .HasColumnType("int");

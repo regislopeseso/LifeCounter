@@ -129,7 +129,6 @@ namespace LifeCounterAPI.Services
 
         public async Task<(AdminsDeleteGameResponse?, string)> DeleteGame(AdminsDeleteGameRequest request)
         {
-
             if (request == null || request.GameId <= 0)
             {
                 return (null, "Error: invalid GameId");
@@ -148,6 +147,7 @@ namespace LifeCounterAPI.Services
                                    .Games
                                    .Where(a => a.Id == request.GameId)
                                    .FirstOrDefaultAsync();
+
             if (gameDB == null)
             {
                 return (null, "Error: this game has been already deleted");

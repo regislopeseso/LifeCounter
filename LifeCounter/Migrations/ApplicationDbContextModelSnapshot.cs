@@ -87,6 +87,9 @@ namespace LifeCounterAPI.Migrations
                     b.Property<int>("CurrentLifeTotal")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("MatchId")
                         .HasColumnType("int");
 
