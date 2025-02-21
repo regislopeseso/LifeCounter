@@ -20,7 +20,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest request)
         {          
-            var (isValid, message) = CreateIsValid(request);
+            var (isValid, message) = IsValid_Create(request);
 
             if (isValid == false)
             {
@@ -40,7 +40,7 @@ namespace LifeCounterAPI.Services
             {
                 Name = request.GameName,
                 StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
-                FixedMaxLife = request.FixedLifeTotal.HasValue == true ? request.FixedLifeTotal.HasValue : false,
+                FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false,
             };
 
             this._daoDbContext.Add(newGame);
@@ -50,7 +50,7 @@ namespace LifeCounterAPI.Services
             return (null, "New game created successfully");
         }
 
-        public static (bool, string) CreateIsValid(AdminsCreateGameRequest request)
+        public static (bool, string) IsValid_Create(AdminsCreateGameRequest request)
         {
             if (request == null)
             {
@@ -67,9 +67,9 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: informing a LifeTotal for the new game is mandatory");
             }
 
-            if(request.FixedLifeTotal == null)
+            if(request.FixedMaxLife.HasValue == false)
             {
-                return (false, "Error: informing if the game has max life total fixed or not is mandary. Inform either: 1 - yes or 0 - no.");
+                return (false, "Error: informing if the game has max life total fixed or not is mandatory. Inform either: 1 - yes or 0 - no.");
             }
 
             return (true, String.Empty);

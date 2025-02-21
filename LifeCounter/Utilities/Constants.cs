@@ -7,5 +7,7 @@
         public const int BasicHealing = 1;
 
         public const int BasicDamage = 1;
+
+        public const int MinPlayerCount = 2;
     }
 }

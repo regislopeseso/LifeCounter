@@ -2,12 +2,13 @@
 {
     public class PlayersShowStatsResponse
     {
-        public int CountMatches { get; set; }
-        public int MatchesAvgPlayerCount { get; set; }
-        public int MatchesAvgDuration { get; set; }
+        public int FinishedMatches { get; set; }
+        public int UnfinishedMatches { get; set; }
+        public int AvgPlayersPerMatch { get; set; }
+        public int AvgMatchDurationMinutes { get; set; }
 
-        public int MostPlayedGameId { get; set; }
-        public int LongestAvgMatchGame_id { get; set; }
-        public string LongestAvgMatchGame_name {  get; set; }
+        public int MostPlayedGame { get; set; }
+        public int AvgLongestGame { get; set; }
+        //public string avgLongestGame_name {  get; set; }
     }
 }

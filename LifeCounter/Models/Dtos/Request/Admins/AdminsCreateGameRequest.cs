@@ -4,6 +4,6 @@
     {
         public string? GameName {  get; set; }
         public int? LifeTotal { get; set; }
-        public bool? FixedLifeTotal { get; set; }
+        public bool? FixedMaxLife { get; set; }
     }
 }

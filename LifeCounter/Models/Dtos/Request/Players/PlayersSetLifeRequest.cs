@@ -2,7 +2,7 @@
 {
     public class PlayersSetLifeRequest
     {
-        public int PlayerId { get; set; }
-        public int NewCurrentLife { get; set; }
+        public int? PlayerId { get; set; }
+        public int? NewCurrentLife { get; set; }
     }
 }
