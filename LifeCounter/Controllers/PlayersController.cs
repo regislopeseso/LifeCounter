@@ -33,11 +33,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> IncreaseLifeTotal(PlayersIncreaseLifeTotalRequest request)
+        public async Task<IActionResult> IncreaseLife(PlayersIncreaseLifeRequest request)
         {
-            var (content, message) = await this._playersService.IncreaseLifeTotal(request);
+            var (content, message) = await this._playersService.IncreaseLife(request);
 
-            var response = new Response<PlayersIncreaseLifeTotalResponse>()
+            var response = new Response<PlayersIncreaseLifeResponse>()
             {
                 Content = content,
                 Message = message
@@ -47,11 +47,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> DecreaseLifeTotal(PlayersDecreaseLifeTotalRequest request)
+        public async Task<IActionResult> DecreaseLife(PlayersDecreaseLifeRequest request)
         {
-            var (content, message) = await this._playersService.DecreaseLifeTotal(request);
+            var (content, message) = await this._playersService.DecreaseLife(request);
 
-            var response = new Response<PlayersDecreaseLifeTotalResponse>()
+            var response = new Response<PlayersDecreaseLifeResponse>()
             {
                 Content = content,
                 Message = message
@@ -61,11 +61,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> SetLifeTotal(PlayersSetLifeTotalRequest request)
+        public async Task<IActionResult> SetLife(PlayersSetLifeRequest request)
         {
-            var (content, message) = await this._playersService.SetLifeTotal(request);
+            var (content, message) = await this._playersService.SetLife(request);
 
-            var response = new Response<PlayersSetLifeTotalResponse>()
+            var response = new Response<PlayersSetLifeResponse>()
             {
                 Content = content,
                 Message = message
@@ -75,11 +75,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> ResetLifeTotal(PlayersResetLifeTotalRequest request)
+        public async Task<IActionResult> ResetLife(PlayersResetLifeRequest request)
         {
-            var (content, message) = await this._playersService.ResetLifeTotal(request);
+            var (content, message) = await this._playersService.ResetLife(request);
 
-            var response = new Response<PlayersResetLifeTotalResponse>()
+            var response = new Response<PlayersResetLifeResponse>()
             {
                 Content = content,
                 Message = message

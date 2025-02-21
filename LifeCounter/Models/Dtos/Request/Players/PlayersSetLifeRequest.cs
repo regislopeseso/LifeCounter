@@ -1,8 +1,8 @@
 ﻿namespace LifeCounterAPI.Models.Dtos.Request.Players
 {
-    public class PlayersSetLifeTotalRequest
+    public class PlayersSetLifeRequest
     {
         public int PlayerId { get; set; }
-        public int LifeValue { get; set; }
+        public int NewCurrentLife { get; set; }
     }
 }

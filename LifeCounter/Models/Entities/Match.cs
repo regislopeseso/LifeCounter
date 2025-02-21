@@ -18,11 +18,15 @@ namespace LifeCounterAPI.Models.Entities
         public Game Game {  get; set; }
 
         public required List<Player> Players {  get; set; }
+
         public int PlayersCount { get; set; }
 
         public long StartingTime { get; set; }
+
         public long EndingTime { get; set; }
+
         public long Duration {  get; set; }
+
         public bool IsFinished { get; set; } = false;
     }
 }

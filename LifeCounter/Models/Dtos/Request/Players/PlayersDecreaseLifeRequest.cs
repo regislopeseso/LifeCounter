@@ -2,7 +2,7 @@
 
 namespace LifeCounterAPI.Models.Dtos.Request.Players
 {
-    public class PlayersDecreaseLifeTotalRequest
+    public class PlayersDecreaseLifeRequest
     {
         public int? MatchId {  get; set; }
 

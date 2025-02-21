@@ -39,7 +39,7 @@ namespace LifeCounterAPI.Services
             var newGame = new Game()
             {
                 Name = request.GameName,
-                LifeTotal = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
+                StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
                 FixedMaxLife = request.FixedLifeTotal.HasValue == true ? request.FixedLifeTotal.HasValue : false,
             };
 
@@ -108,7 +108,7 @@ namespace LifeCounterAPI.Services
             }
 
             gameDB.Name = request.GameName;
-            gameDB.LifeTotal = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99;
+            gameDB.StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99;
 
             await this._daoDbContext.SaveChangesAsync();
 
