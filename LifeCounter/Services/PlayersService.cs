@@ -341,72 +341,48 @@ namespace LifeCounterAPI.Services
                              .FirstOrDefaultAsync();
         }
 
-        public async Task<(PlayersDecreaseLifeResponse?, string)> DecreaseLife(PlayersDecreaseLifeRequest request)
+        public async Task<(PlayersDecreaseLifeResponse?, string)> DecreaseLife(PlayersDecreaseLifeRequest? request)
         {
-            var (requestIsValid, message) = await DecreaseLifeValidation(request);
+            var (requestIsValid, message) = DecreaseLifeValidation(request);
 
             if (requestIsValid == false)
             {
                 return (null, message);
             }
 
-            var playersDB = new List<Player>();
+            Match? matchDB;
 
+            (matchDB, message) = await GetMatch(request.MatchId, request.PlayerIds);
+
+            if(matchDB == null || matchDB.Players == null || matchDB.Players.Count == 0)
+            {
+                return (null, message);
+            }
+            
             var playerIds = new List<int>();
 
-            var matchPlayersCount = 0;
-
-            var matchId = 0;
-
-            var isAutoEndMatchOn = false;
-
-            if (request.MatchId.HasValue == true)
+            if(request.PlayerIds != null && request.PlayerIds.Count != 0)
             {
-                var matchDB = await this._daoDbContext
-                                    .Matches
-                                    .Include(a => a.Game)
-                                    .Include(a => a.Players)
-                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
-
-                playersDB = matchDB.Players;
-
-                isAutoEndMatchOn = matchDB.Game.AutoEndMatch;
-
-                matchPlayersCount = matchDB.PlayersCount;
-
-                matchId = matchDB.Id;
-
-                if (request.PlayerIds == null || request.PlayerIds.Count == 0)
-                {
-                    playerIds = playersDB.Select(a => a.Id).ToList();
-                }
-                else
-                {
-                    playerIds = request.PlayerIds;
-                }
+                playerIds = matchDB.Players.Select(a => a.Id).ToList();
+            }
+            else
+            {                
+                playerIds = request.PlayerIds;
             }
 
-            if (request.MatchId.HasValue == false)
+            if(playerIds == null || playerIds.Count == 0)
             {
-                playersDB = await this._daoDbContext
-                                      .Players
-                                      .Include(a => a.Match)
-                                      .Where(a => request.PlayerIds.Contains(a.Id))
-                                      .ToListAsync();
-
-                var matchDB = playersDB.Select(a => a.Match).FirstOrDefault();
-
-                isAutoEndMatchOn = matchDB.Game.AutoEndMatch;
-
-                matchPlayersCount = matchDB.PlayersCount;
-
-                matchId = matchDB.Id;
-
-                if (request.PlayerIds.Count != 0)
-                {
-                    playerIds = request.PlayerIds;
-                }
+                return (null, "Error: no player found");
             }
+
+            (requestIsValid, message) = ManyPlayersOneMatchValidation(matchDB, playerIds);
+                
+            if(requestIsValid == false)
+            {
+                return (null, message);
+            }                               
+            
+            var isAutoEndMatchOn = matchDB.Game.AutoEndMatch;
 
             message = $"All players suffered {request.DamageAmount} damage. ";
 
@@ -416,34 +392,38 @@ namespace LifeCounterAPI.Services
             }
             else
             {
-                message = $"Players (ids = {string.Join(", ", playerIds)}) suffered {request.DamageAmount} damage.";
+                message = $"Players (ids = {string.Join(", ", playerIds.ToList())}) suffered {request.DamageAmount} damage.";
             }
 
             foreach (var playerId in playerIds)
             {
-                var playerDB = playersDB.Where(a => a.Id == playerId).FirstOrDefault();
+                var playerDB = matchDB.Players.Where(a => a.Id == playerId).FirstOrDefault();
+                if(playerDB == null)
+                {
+                    continue;
+                }
                 playerDB.CurrentLife -= request.DamageAmount;
             }
 
             await this._daoDbContext.SaveChangesAsync();
+            
+            var defeatedPlayersCount = matchDB.Players.Where(a => a.CurrentLife <= 0).Count();
 
-            var defeatedPlayersCount = playersDB.Where(a => a.CurrentLife <= 0).Count();
-
-            var isFinished = matchPlayersCount - defeatedPlayersCount <= 1;
+            var isFinished = matchDB.PlayersCount - defeatedPlayersCount <= 1;
 
             if (isFinished == true && isAutoEndMatchOn == true)
             {
-                var (isFinishSucessful, gameOverMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchId);
+                var (isFinishSucessful, gameOverMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
                 if (isFinishSucessful == false)
                 {
                     return (null, gameOverMessage);
                 }
                 message += gameOverMessage;
-            }
+            }           
 
             return (null, message.Trim());
         }
-        private async Task<(bool, string)> DecreaseLifeValidation(PlayersDecreaseLifeRequest request)
+        private static (bool, string) DecreaseLifeValidation(PlayersDecreaseLifeRequest request)
         {
             if (request == null)
             {
@@ -470,137 +450,41 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: invalid DamageAmount. It must be greater non negative value");
             }
 
-            if (request.MatchId.HasValue == true)
-            {
-                var matchIdExists = await this._daoDbContext
-                                              .Matches
-                                              .AnyAsync(a => a.Id == request.MatchId && a.IsFinished == false);
-
-                if (matchIdExists == false)
-                {
-                    var isMatchFinished = await this._daoDbContext
-                                                    .Matches
-                                                    .AnyAsync(a => a.Id == request.MatchId && a.IsFinished == true);
-
-                    if (isMatchFinished == true)
-                    {
-                        return (false, "Error: this match is already finished");
-                    }
-
-                    return (false, "Error: match not found");
-                }
-            }
-
-            if (request.PlayerIds != null && request.PlayerIds.Count != 0)
-            {
-                var playersMatchDB = await this._daoDbContext
-                                             .Players
-                                             .Where(a => request.PlayerIds.Contains(a.Id) && a.IsDeleted == false)
-                                             .Select(a => a.Id)
-                                             .ToListAsync();
-
-                var invalidPlayers = request.PlayerIds.Except(playersMatchDB).ToList();
-
-                if (invalidPlayers != null && invalidPlayers.Count > 0)
-                {
-                    string message = "Error: ";
-
-                    message += invalidPlayers.Count == 1 ? $"player (id = {invalidPlayers[0]}) not found" : $"Players (ids = {string.Join(", ", invalidPlayers)}) not found";
-
-                    var isMatchFinished = await this._daoDbContext
-                                             .Players
-                                             .Where(a => request.PlayerIds.Contains(a.Id) && a.Match.IsFinished == true)
-                                             .AnyAsync();
-
-                    if (isMatchFinished == true)
-                    {
-                        message = "Error: ";
-                        message += request.PlayerIds.Count == 1 ?
-                            "this player's match is already finished" :
-                            "the match these players were participating in has finished.";
-                    }
-
-                    return (false, message);
-                }
-            }
-
             return (true, string.Empty);
         }
 
         public async Task<(PlayersResetLifeResponse?, string)> ResetLife(PlayersResetLifeRequest request)
         {
-            var (requestIsValid, message) = await ResetLifeValidation(request);
+            var (requestIsValid, message) = ResetLifeValidation(request);
 
             if (requestIsValid == false)
             {
                 return (null, message);
             }
 
-            var playersDB = new List<Player>();
+            Match? matchDB;
+            (matchDB, message) = await GetMatch(request.MatchId, request.PlayerIds);
 
-            var playerIds = new List<int>();
-
-            var matchPlayersCount = 0;
-
-            var matchId = 0;
-
-            if (request.MatchId.HasValue == true)
-            {
-                var matchDB = await this._daoDbContext
-                                    .Matches
-                                    .Include(a => a.Players)
-                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
-
-                playersDB = matchDB.Players;
-
-                matchPlayersCount = matchDB.PlayersCount;
-
-                matchId = matchDB.Id;
-
-                if (request.PlayerIds == null || request.PlayerIds.Count == 0)
-                {
-                    playerIds = playersDB.Select(a => a.Id).ToList();
-                }
-                else
-                {
-                    playerIds = request.PlayerIds;
-                }
-            }
-
-            if (request.MatchId.HasValue == false)
-            {
-                playersDB = await this._daoDbContext
-                                      .Players
-                                      .Include(a => a.Match)
-                                      .Where(a => request.PlayerIds.Contains(a.Id))
-                                      .ToListAsync();
-
-                var matchDB = playersDB.Select(a => a.Match).FirstOrDefault();
-
-                matchPlayersCount = matchDB.PlayersCount;
-
-                matchId = matchDB.Id;
-
-                if (request.PlayerIds != null && request.PlayerIds.Count != 0)
-                {
-                    playerIds = request.PlayerIds;
-                }
-            }
+            var playerIds = matchDB.Players.Select(a => a.Id).ToList();
 
             message = $"All players had their lives reset. ";
 
-            if (playerIds.Count == 1)
+            if (request.PlayerIds != null && request.PlayerIds.Count != 0)
             {
-                message = $"Player (id = {playerIds[0]}) had his life reset.";
-            }
-            else
-            {
-                message = $"Players (ids = {string.Join(", ", playerIds)}) had their lives reset.";
-            }
+                playerIds = request.PlayerIds;
+
+                message = request.PlayerIds.Count == 1 ? 
+                $"Player (id = {request.PlayerIds[0]}) had his life reset.":
+                $"Players (ids = {string.Join(", ", request.PlayerIds)}) had their lives reset.";
+            }         
 
             foreach (var playerId in playerIds)
             {
-                var playerDB = playersDB.Where(a => a.Id == playerId).FirstOrDefault();
+                var playerDB = matchDB.Players.Where(a => a.Id == playerId).FirstOrDefault();
+                if(playerDB == null)
+                {
+                    continue;
+                }
                 playerDB.CurrentLife = playerDB.StartingLife;
             }
 
@@ -608,7 +492,7 @@ namespace LifeCounterAPI.Services
 
             return (null, message.Trim());
         }
-        private async Task<(bool, string)> ResetLifeValidation(PlayersResetLifeRequest request)
+        private static (bool, string) ResetLifeValidation(PlayersResetLifeRequest request)
         {
             if (request == null)
             {
@@ -635,53 +519,77 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: one or more negative values for PlayerId were informed. PlayerId must be a positive value");
             }
 
-            if (request.MatchId.HasValue == true)
-            {
-                var matchExists = await this._daoDbContext
-                                              .Matches
-                                              .Where(a => a.Id == request.MatchId)                                             
-                                              .FirstOrDefaultAsync();
-
-                if (matchExists == null)
-                {
-                    return (false, "Error: match not found");
-                }
-                if (matchExists.IsFinished == true)
-                {                    
-                    return (false, "Error: this match is already finished");
-                }
-            }
-
-            if (request.PlayerIds != null && request.PlayerIds.Count != 0)
-            {
-                var playersGroupedByMatchId = await this._daoDbContext
-                                             .Players
-                                             .Where(a => request.PlayerIds.Contains(a.Id) && a.IsDeleted == false)
-                                             .GroupBy(a => a.MatchId)
-                                             .Select(a => a.Select(a => a.Id).ToList())
-                                             .ToListAsync();
-
-                if(playersGroupedByMatchId.Count > 1)
-                {
-                    return (false, "");
-                }
-
-                var playersMatchDB = playersGroupedByMatchId.FirstOrDefault();
-
-                var invalidPlayers = request.PlayerIds.Except(playersGroupedByMatchId[0]).ToList();
-
-                if (invalidPlayers != null && invalidPlayers.Count > 0)
-                {
-                    string message = string.Empty;
-                    message += invalidPlayers.Count == 1 ? $"Player (id = {invalidPlayers[0]}) not found" : $"Players (ids = {string.Join(", ", invalidPlayers)}) not found";
-
-                    return (false, message);
-                }
-            }
-
             return (true, string.Empty);
         }
         
+        private async Task<(Match?, string)> GetMatch(int? matchId, List<int>? playerIds)
+        {
+            if (matchId.HasValue == true)
+            {
+                var matchDB = await this._daoDbContext
+                                  .Matches
+                                  .Include(a => a.Players)
+                                  .Include(a => a.Game)
+                                  .FirstOrDefaultAsync(a => a.Id == matchId);
+                
+                if (matchDB == null)
+                {
+                    return (null, "Error: match not found");
+                }
+                
+                if(matchDB.IsFinished == true)
+                {
+                    return (null, "Error: this match is already finished");
+                }
+
+                return (matchDB, String.Empty);
+            }
+            else
+            {
+                if(playerIds != null && playerIds.Count > 0)
+                {
+                    var matchDB = await this._daoDbContext
+                                            .Matches
+                                            .Include(a => a.Players)
+                                            .Include(a => a.Game)
+                                            .FirstOrDefaultAsync(a => a.Players.Where(b => b.Id == playerIds[0]).Any());
+
+                    if (matchDB == null)
+                    {
+                        return (null, "Error: match not found");
+                    }
+                    
+                    if(matchDB.IsFinished == true)
+                    {
+                        return (null, "Error: this match is already finished");
+                    }
+
+                    return (matchDB, String.Empty);
+                }
+                else
+                {
+                    return (null, "Error: neither a MatchId nor one or more PlayerId(s) were provided");
+                }                
+            }
+        }
+
+        private static (bool, string) ManyPlayersOneMatchValidation(Match matchDB, List<int> request_playerIds)
+        {       
+            var playerIdsDB = matchDB.Players.Select(a => a.Id).ToList();
+
+            var invalidPlayerIds = request_playerIds.Except(playerIdsDB).ToList();
+
+              if(invalidPlayerIds.Count > 0)
+                {
+                    var message = $"Error: ";
+                    message += invalidPlayerIds.Count == 1 ? $"player (id = {invalidPlayerIds[0]})" : $"Players (ids = {string.Join(", ", invalidPlayerIds)})";
+                    message += " not found in this match";
+                    return (false, message);
+                }
+
+            return (true, string.Empty);
+        }
+
         public async Task<(PlayersShowMatchStatusResponse?, string)> ShowMatchStatus(PlayersShowMatchStatusRequest request)
         {
             if (request == null)
@@ -867,6 +775,7 @@ namespace LifeCounterAPI.Services
             };
 
             return (content, "Statistics showed successfully");
+
         }
     }
 }
