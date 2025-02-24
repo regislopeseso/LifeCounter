@@ -1,6 +1,4 @@
-﻿using LifeCounterAPI.Models.Entities;
-
-namespace LifeCounterAPI.Models.Dtos.Response.Players
+﻿namespace LifeCounterAPI.Models.Dtos.Response.Players
 {
     public class PlayersNewMatchResponse
     {

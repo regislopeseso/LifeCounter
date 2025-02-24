@@ -1,4 +1,4 @@
-@LifeCounterAPI_HostAddress = http://localhost:5132
+@LifeCounterAPI_HostAddress = http://localhost:7136
 
 GET {{LifeCounterAPI_HostAddress}}/weatherforecast/
 Accept: application/json

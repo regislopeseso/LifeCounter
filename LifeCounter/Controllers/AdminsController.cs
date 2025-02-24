@@ -2,7 +2,6 @@
 using LifeCounterAPI.Models.Dtos.Response;
 using LifeCounterAPI.Models.Dtos.Response.Admin;
 using LifeCounterAPI.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LifeCounterAPI.Controllers

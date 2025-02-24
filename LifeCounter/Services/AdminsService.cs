@@ -1,10 +1,8 @@
 ﻿using LifeCounterAPI.Models.Dtos.Request.Admin;
 using LifeCounterAPI.Models.Dtos.Response.Admin;
 using LifeCounterAPI.Models.Entities;
-using Microsoft.AspNetCore.Connections;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Reflection.Metadata.Ecma335;
 
 namespace LifeCounterAPI.Services
 {
@@ -20,7 +18,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest request)
         {          
-            var (isValid, message) = IsValid_Create(request);
+            var (isValid, message) = CreateValidation(request);
 
             if (isValid == false)
             {
@@ -41,6 +39,7 @@ namespace LifeCounterAPI.Services
                 Name = request.GameName,
                 StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
                 FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false,
+                AutoEndMatch = request.AutoEndBattle == true ? request.AutoEndBattle.Value : false
             };
 
             this._daoDbContext.Add(newGame);
@@ -50,7 +49,7 @@ namespace LifeCounterAPI.Services
             return (null, "New game created successfully");
         }
 
-        public static (bool, string) IsValid_Create(AdminsCreateGameRequest request)
+        public static (bool, string) CreateValidation(AdminsCreateGameRequest request)
         {
             if (request == null)
             {
@@ -69,7 +68,12 @@ namespace LifeCounterAPI.Services
 
             if(request.FixedMaxLife.HasValue == false)
             {
-                return (false, "Error: informing if the game has max life total fixed or not is mandatory. Inform either: 1 - yes or 0 - no.");
+                return (false, "Error: informing if max life should be fixed or not is mandatory.");
+            }
+
+            if(request.AutoEndBattle.HasValue == false)
+            {
+                return (false, "Error: informing if the auto end battle should be on or off is mandatory.");
             }
 
             return (true, String.Empty);
@@ -82,7 +86,7 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: no information provided");
             }
 
-            var (isValid, message) = EditIsValid(request);
+            var (isValid, message) = EditValidation(request);
 
             if (isValid == false)
             {
@@ -107,15 +111,17 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: game not found");
             }
 
-            gameDB.Name = request.GameName;
+            gameDB.Name = request.GameName != null ? request.GameName : string.Empty;
             gameDB.StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99;
+            gameDB.FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false;
+            gameDB.AutoEndMatch = request.AutoEndBattle == true ? request.AutoEndBattle.Value : false;
 
             await this._daoDbContext.SaveChangesAsync();
 
             return (null, "Game edited successfully");
         }
 
-        public static (bool, string) EditIsValid(AdminsEditGameRequest request)
+        public static (bool, string) EditValidation(AdminsEditGameRequest request)
         {
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
@@ -130,6 +136,11 @@ namespace LifeCounterAPI.Services
             if (request.LifeTotal.HasValue == false)
             {
                 return (false, "Error: informing a LifeTotal for the game being edited is mandatory");
+            }
+
+            if(request.AutoEndBattle.HasValue == false)
+            {
+                return (false, "Error: informing if the auto end battle should be on or off is mandatory.");
             }
 
             return (true, String.Empty);

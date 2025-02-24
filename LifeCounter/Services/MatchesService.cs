@@ -1,5 +1,4 @@
-﻿using LifeCounterAPI.Models.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace LifeCounterAPI.Services
 {
@@ -58,7 +57,7 @@ namespace LifeCounterAPI.Services
                 .ExecuteUpdateAsync(a => a
                 .SetProperty(b => b.IsDeleted, true));
 
-            return (true, $" and all players beloging to this match have been also deleted.");
+            return (true, $" this match is now finished and all players belonging to this match have been also deleted.");
         }
     }
 }

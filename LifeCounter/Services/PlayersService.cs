@@ -3,10 +3,6 @@ using LifeCounterAPI.Models.Dtos.Response.Players;
 using LifeCounterAPI.Models.Entities;
 using LifeCounterAPI.Utilities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 
 namespace LifeCounterAPI.Services
 {
@@ -21,7 +17,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersNewMatchResponse?, string)> NewMatch(PlayersNewMatchRequest request)
         {
-            var (requestIsValid, message) = IsValid_NewMatch(request);
+            var (requestIsValid, message) = NewMatchValidation(request);
 
             if (requestIsValid == false)
             {
@@ -141,7 +137,7 @@ namespace LifeCounterAPI.Services
 
             return (content, $"New {gameDB.Name} match started with {newPlayers.Count} players");
         }
-        private static (bool, string) IsValid_NewMatch(PlayersNewMatchRequest request)
+        private static (bool, string) NewMatchValidation(PlayersNewMatchRequest request)
         {
             if (request == null)
             {
@@ -185,7 +181,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersIncreaseLifeResponse?, string)> IncreaseLife(PlayersIncreaseLifeRequest request)
         {
-            var (requestIsValid, message) = await IsValid_IncreaseLifeRequest(request);
+            var (requestIsValid, message) = await IncreaseLifeValidation(request);
 
             if (requestIsValid == false)
             {
@@ -216,7 +212,7 @@ namespace LifeCounterAPI.Services
 
             return (null, $"Player gained {request.HealingAmount} life points");
         }
-        private async Task<(bool, string)> IsValid_IncreaseLifeRequest(PlayersIncreaseLifeRequest request)
+        private async Task<(bool, string)> IncreaseLifeValidation(PlayersIncreaseLifeRequest request)
         {
             if (request == null)
             {
@@ -258,7 +254,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersSetLifeResponse?, string)> SetLife(PlayersSetLifeRequest? request)
         {
-            var (requestIsValid, message) = IsValid_SetLifeRequest(request);
+            var (requestIsValid, message) = SetLifeValidation(request);
 
             if (requestIsValid == false)
             {
@@ -312,7 +308,7 @@ namespace LifeCounterAPI.Services
 
             return (null, message);
         }
-        private static (bool, string) IsValid_SetLifeRequest(PlayersSetLifeRequest request)
+        private static (bool, string) SetLifeValidation(PlayersSetLifeRequest request)
         {
             if (request == null)
             {
@@ -347,7 +343,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersDecreaseLifeResponse?, string)> DecreaseLife(PlayersDecreaseLifeRequest request)
         {
-            var (requestIsValid, message) = await IsValid_DecreaseLifeRequest(request);
+            var (requestIsValid, message) = await DecreaseLifeValidation(request);
 
             if (requestIsValid == false)
             {
@@ -362,14 +358,19 @@ namespace LifeCounterAPI.Services
 
             var matchId = 0;
 
+            var isAutoEndMatchOn = false;
+
             if (request.MatchId.HasValue == true)
             {
                 var matchDB = await this._daoDbContext
                                     .Matches
+                                    .Include(a => a.Game)
                                     .Include(a => a.Players)
                                     .FirstOrDefaultAsync(a => a.Id == request.MatchId);
 
                 playersDB = matchDB.Players;
+
+                isAutoEndMatchOn = matchDB.Game.AutoEndMatch;
 
                 matchPlayersCount = matchDB.PlayersCount;
 
@@ -387,8 +388,6 @@ namespace LifeCounterAPI.Services
 
             if (request.MatchId.HasValue == false)
             {
-
-
                 playersDB = await this._daoDbContext
                                       .Players
                                       .Include(a => a.Match)
@@ -396,6 +395,8 @@ namespace LifeCounterAPI.Services
                                       .ToListAsync();
 
                 var matchDB = playersDB.Select(a => a.Match).FirstOrDefault();
+
+                isAutoEndMatchOn = matchDB.Game.AutoEndMatch;
 
                 matchPlayersCount = matchDB.PlayersCount;
 
@@ -430,8 +431,7 @@ namespace LifeCounterAPI.Services
 
             var isFinished = matchPlayersCount - defeatedPlayersCount <= 1;
 
-
-            if (isFinished == true)
+            if (isFinished == true && isAutoEndMatchOn == true)
             {
                 var (isFinishSucessful, gameOverMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchId);
                 if (isFinishSucessful == false)
@@ -443,7 +443,7 @@ namespace LifeCounterAPI.Services
 
             return (null, message.Trim());
         }
-        private async Task<(bool, string)> IsValid_DecreaseLifeRequest(PlayersDecreaseLifeRequest request)
+        private async Task<(bool, string)> DecreaseLifeValidation(PlayersDecreaseLifeRequest request)
         {
             if (request == null)
             {
@@ -529,7 +529,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersResetLifeResponse?, string)> ResetLife(PlayersResetLifeRequest request)
         {
-            var (requestIsValid, message) = await IsValid_ResetLifeRequest(request);
+            var (requestIsValid, message) = await ResetLifeValidation(request);
 
             if (requestIsValid == false)
             {
@@ -608,7 +608,7 @@ namespace LifeCounterAPI.Services
 
             return (null, message.Trim());
         }
-        private async Task<(bool, string)> IsValid_ResetLifeRequest(PlayersResetLifeRequest request)
+        private async Task<(bool, string)> ResetLifeValidation(PlayersResetLifeRequest request)
         {
             if (request == null)
             {
@@ -681,6 +681,7 @@ namespace LifeCounterAPI.Services
 
             return (true, string.Empty);
         }
+        
         public async Task<(PlayersShowMatchStatusResponse?, string)> ShowMatchStatus(PlayersShowMatchStatusRequest request)
         {
             if (request == null)
