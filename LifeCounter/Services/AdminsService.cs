@@ -6,7 +6,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LifeCounterAPI.Services
 {
-    [Table("battles")]
     public class AdminsService
     {
         private readonly ApplicationDbContext _daoDbContext;
