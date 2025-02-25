@@ -18,6 +18,8 @@ namespace LifeCounterAPI.Models.Entities
         public int MatchId { get; set; }
         public Match? Match { get; set; }
 
+        public bool FixedMaxLife { get; set; }
+
         public bool IsDeleted { get; set; } = false;
     }
 }

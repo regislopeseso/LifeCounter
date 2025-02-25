@@ -6,6 +6,6 @@ namespace LifeCounterAPI.Models.Dtos.Request.Players
     {
         public int PlayerId { get; set; }
 
-        public int? HealingAmount { get; set; } = Constants.BasicHealing;
+        public int? IncreaseAmount { get; set; } = Constants.BasicHealing;
     }
 }

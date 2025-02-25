@@ -27,6 +27,8 @@ namespace LifeCounterAPI.Models.Entities
 
         public long Duration {  get; set; }
 
+        public bool AutoEnd { get; set; }
+
         public bool IsFinished { get; set; } = false;
     }
 }

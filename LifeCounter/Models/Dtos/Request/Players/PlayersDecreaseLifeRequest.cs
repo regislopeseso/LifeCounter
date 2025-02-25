@@ -8,6 +8,6 @@ namespace LifeCounterAPI.Models.Dtos.Request.Players
 
         public List<int>? PlayerIds { get; set; }
 
-        public int DamageAmount { get; set; } = Constants.BasicDamage;
+        public int DecreaseAmount { get; set; } = Constants.BasicDamage;
     }
 }
