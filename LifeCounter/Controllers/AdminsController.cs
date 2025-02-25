@@ -18,7 +18,7 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateGame(AdminsCreateGameRequest request)
+        public async Task<IActionResult> CreateGame(AdminsCreateGameRequest? request)
         {
             var (content, message) = await this._adminsService.CreateGame(request);
 
@@ -32,7 +32,7 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> EditGame(AdminsEditGameRequest request)
+        public async Task<IActionResult> EditGame(AdminsEditGameRequest? request)
         {
             var (content, message) = await this._adminsService.EditGame(request);
 
@@ -46,7 +46,7 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpDelete]
-        public async Task<IActionResult> DeleteGame(AdminsDeleteGameRequest request)
+        public async Task<IActionResult> DeleteGame(AdminsDeleteGameRequest? request)
         {
             var (content, message) = await this._adminsService.DeleteGame(request);
 

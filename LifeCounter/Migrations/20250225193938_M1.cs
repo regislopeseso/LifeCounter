@@ -24,6 +24,7 @@ namespace LifeCounterAPI.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     StartingLife = table.Column<int>(type: "int", nullable: false),
                     FixedMaxLife = table.Column<bool>(type: "tinyint(1)", nullable: false),
+                    AutoEndMatch = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
@@ -43,6 +44,7 @@ namespace LifeCounterAPI.Migrations
                     StartingTime = table.Column<long>(type: "bigint", nullable: false),
                     EndingTime = table.Column<long>(type: "bigint", nullable: false),
                     Duration = table.Column<long>(type: "bigint", nullable: false),
+                    AutoEnd = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsFinished = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>
@@ -66,6 +68,7 @@ namespace LifeCounterAPI.Migrations
                     StartingLife = table.Column<int>(type: "int", nullable: false),
                     CurrentLife = table.Column<int>(type: "int", nullable: false),
                     MatchId = table.Column<int>(type: "int", nullable: false),
+                    FixedMaxLife = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },
                 constraints: table =>

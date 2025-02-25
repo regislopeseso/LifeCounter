@@ -40,7 +40,7 @@ namespace LifeCounterAPI.Services
                    .ExecuteUpdateAsync(a => a
                    .SetProperty(b => b.IsDeleted, true));
 
-                return (true, $" and all matches of this game are now finished and their players deleted");
+                return (true, $". All matches of this game are now finished and their players deleted.");
             } 
 
             await _daoDbContext
@@ -57,7 +57,7 @@ namespace LifeCounterAPI.Services
                 .ExecuteUpdateAsync(a => a
                 .SetProperty(b => b.IsDeleted, true));
 
-            return (true, $" this match is now finished and all players belonging to this match have been also deleted.");
+            return (true, $". This match is now finished and all players belonging to this match have been also deleted.");
         }
     }
 }

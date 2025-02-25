@@ -16,7 +16,7 @@ namespace LifeCounterAPI.Services
             _daoDbContext = daoDbContext;
         }
 
-        public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest request)
+        public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest? request)
         {          
             var (isValid, message) = CreateValidation(request);
 
@@ -39,7 +39,7 @@ namespace LifeCounterAPI.Services
                 Name = request.GameName,
                 StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
                 FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false,
-                AutoEndMatch = request.AutoEndBattle == true ? request.AutoEndBattle.Value : false
+                AutoEndMatch = request.AutoEndMatch == true ? request.AutoEndMatch.Value : false
             };
 
             this._daoDbContext.Add(newGame);
@@ -49,7 +49,7 @@ namespace LifeCounterAPI.Services
             return (null, "New game created successfully");
         }
 
-        public static (bool, string) CreateValidation(AdminsCreateGameRequest request)
+        public static (bool, string) CreateValidation(AdminsCreateGameRequest? request)
         {
             if (request == null)
             {
@@ -71,7 +71,7 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: informing if max life should be fixed or not is mandatory.");
             }
 
-            if(request.AutoEndBattle.HasValue == false)
+            if(request.AutoEndMatch.HasValue == false)
             {
                 return (false, "Error: informing if the auto end battle should be on or off is mandatory.");
             }
@@ -79,18 +79,27 @@ namespace LifeCounterAPI.Services
             return (true, String.Empty);
         }
 
-        public async Task<(AdminsEditGameResponse?, string)> EditGame(AdminsEditGameRequest request)
-        {
-            if (request == null)
-            {
-                return (null, "Error: no information provided");
-            }
-
+        public async Task<(AdminsEditGameResponse?, string)> EditGame(AdminsEditGameRequest? request)
+        {            
             var (isValid, message) = EditValidation(request);
 
             if (isValid == false)
             {
                 return (null, message);
+            }
+
+            var gameDB = await this._daoDbContext
+                                   .Games
+                                   .FirstOrDefaultAsync(a => a.Id == request.GameId);
+
+            if (gameDB == null)
+            {
+                return (null, "Error: game not found");
+            }
+
+            if(gameDB.IsDeleted == true)
+            {
+                return (null, "Error: this game has been deleted");
             }
 
             var exists = await this._daoDbContext
@@ -100,57 +109,55 @@ namespace LifeCounterAPI.Services
             if (exists == true)
             {
                 return (null, $"Error: {request.GameName} already exists");
-            }
-
-            var gameDB = await this._daoDbContext
-                                          .Games
-                                          .FirstOrDefaultAsync(a => a.Id == request.GameId && a.IsDeleted == false);
-
-            if (gameDB == null)
-            {
-                return (null, "Error: game not found");
-            }
+            }            
 
             gameDB.Name = request.GameName != null ? request.GameName : string.Empty;
-            gameDB.StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99;
+            gameDB.StartingLife = request.StartingLife.HasValue == true ? request.StartingLife.Value : 99;
             gameDB.FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false;
-            gameDB.AutoEndMatch = request.AutoEndBattle == true ? request.AutoEndBattle.Value : false;
+            gameDB.AutoEndMatch = request.AutoEndMatch == true ? request.AutoEndMatch.Value : false;
 
             await this._daoDbContext.SaveChangesAsync();
 
             return (null, "Game edited successfully");
         }
 
-        public static (bool, string) EditValidation(AdminsEditGameRequest request)
+        public static (bool, string) EditValidation(AdminsEditGameRequest? request)
         {
+            if (request == null)
+            {
+                return (false, "Error: no information was provided");
+            }
+
+            if (request.GameId <= 0)
+            {
+                return (false, $"Error: invalid GameId: {request.GameId}. It must be a positive value");
+            }
+
             if (String.IsNullOrWhiteSpace(request.GameName) == true)
             {
                 return (false, "Error: informing a name for the game being edited is mandatory ");
             }
 
-            if (request.GameId <= 0)
+            if (request.StartingLife.HasValue == false)
             {
-                return (false, $"Error: invalid GameId: {request.GameId}");
+                return (false, "Error: informing the players StatingLife for the game being edited is mandatory");
             }
 
-            if (request.LifeTotal.HasValue == false)
+            if(request.AutoEndMatch.HasValue == false)
             {
-                return (false, "Error: informing a LifeTotal for the game being edited is mandatory");
-            }
-
-            if(request.AutoEndBattle.HasValue == false)
-            {
-                return (false, "Error: informing if the auto end battle should be on or off is mandatory.");
+                return (false, "Error: informing if the auto end match should be on or off for the game being edited is mandatory.");
             }
 
             return (true, String.Empty);
         }
 
-        public async Task<(AdminsDeleteGameResponse?, string)> DeleteGame(AdminsDeleteGameRequest request)
+        public async Task<(AdminsDeleteGameResponse?, string)> DeleteGame(AdminsDeleteGameRequest? request)
         {
-            if (request == null || request.GameId <= 0)
+            var (isValid, message) = DeleteGameValidation(request);
+
+            if (isValid == false)
             {
-                return (null, "Error: invalid GameId");
+                return (null, message);
             }
 
             var exists = await this._daoDbContext
@@ -163,27 +170,45 @@ namespace LifeCounterAPI.Services
             }
 
             var gameDB = await this._daoDbContext
-                                   .Games
-                                   .Where(a => a.Id == request.GameId)
-                                   .FirstOrDefaultAsync();
+                                   .Games                             
+                                   .FirstOrDefaultAsync(a => a.Id == request.GameId);
 
             if (gameDB == null)
             {
-                return (null, "Error: this game has been already deleted");
+                return (null, "Error: game not found");
+            }
+
+            if(gameDB.IsDeleted == true)
+            {
+                return (null, "Error: this game was has been deleted");
             }
                      
-            var (areMatchesFinished, message) = await MatchesService.FinishMatch(_daoDbContext, request.GameId);
+            var (areMatchesFinished, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, request.GameId);
 
             if (areMatchesFinished == false)
             {
-                return (null,  message);
+                return (null,  reportMessage);
             }
 
             gameDB.IsDeleted = true;
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, "Game deleted successfully. " + message);
+            return (null, "Game deleted successfully" + reportMessage);
+        }
+        private static (bool, string) DeleteGameValidation(AdminsDeleteGameRequest? request)
+        {
+            if (request == null)
+            {
+                return (false, "Error: no informations was provided");
+            }
+
+            if(request.GameId <= 0)
+            {
+                return (false, $"Error: invalid GameId: {request.GameId}. It must be a positive value");
+            }
+
+            return (true, String.Empty);
         }
     }
 }

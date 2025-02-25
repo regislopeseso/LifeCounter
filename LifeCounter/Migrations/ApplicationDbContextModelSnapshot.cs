@@ -57,6 +57,9 @@ namespace LifeCounterAPI.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AutoEnd")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<long>("Duration")
                         .HasColumnType("bigint");
 
@@ -92,6 +95,9 @@ namespace LifeCounterAPI.Migrations
 
                     b.Property<int>("CurrentLife")
                         .HasColumnType("int");
+
+                    b.Property<bool>("FixedMaxLife")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");

@@ -36,7 +36,7 @@ namespace LifeCounterAPI.Services
 
             if (gameDB.FixedMaxLife == true && request.PlayersLifeTotals != null && request.PlayersLifeTotals.Any(a => a > gameDB.StartingLife) == true)
             {
-                return (null, $"Error, the maximum life total allowed for this game is {gameDB.FixedMaxLife}");
+                return (null, $"Error, the maximum life total allowed for this game is {gameDB.StartingLife}");
             }
 
             if (request.PlayersCount.HasValue == false)
@@ -187,7 +187,7 @@ namespace LifeCounterAPI.Services
 
         public async Task<(PlayersIncreaseLifeResponse?, string)> IncreaseLife(PlayersIncreaseLifeRequest request)
         {
-            var (requestIsValid, message) = await IncreaseLifeValidation(request);
+            var (requestIsValid, message) = IncreaseLifeValidation(request);
 
             if (requestIsValid == false)
             {
@@ -210,38 +210,46 @@ namespace LifeCounterAPI.Services
 
             if(playerDB.FixedMaxLife == true && playerDB.CurrentLife == playerDB.StartingLife)
             {
-                return (null, "Error: this player's life total is already at the maximum value allowed for this game");
+                return (null, $"Error: this player's life total is already at the maximum value ({playerDB.StartingLife}) allowed for this game");
             }     
             
             int? increaseAmount = 0;
 
-            if(request.IncreaseAmount + playerDB.CurrentLife <= playerDB.StartingLife)
+            if((request.IncreaseAmount + playerDB.CurrentLife) <= playerDB.StartingLife)
             {
                 increaseAmount = request.IncreaseAmount;
 
-                message = $"Player had his life increased by {increaseAmount} points.";
+                message = $"Player had his life increased by {increaseAmount} ";
+
+                message += increaseAmount == 1 ? "point. " : "points. ";
+
+                message += $"His current life has now {playerDB.CurrentLife + increaseAmount} points.";
             }
-            else if(request.IncreaseAmount + playerDB.CurrentLife > playerDB.StartingLife && playerDB.FixedMaxLife == true)
+            else if((request.IncreaseAmount + playerDB.CurrentLife) > playerDB.StartingLife && playerDB.FixedMaxLife == true)
             {
                 increaseAmount = playerDB.StartingLife - playerDB.CurrentLife;
 
-                message = $"Player had his life increased only by {increaseAmount} points, making it to reach the maximum value allowed for this game";
+                message = $"Player had his life increased only by {increaseAmount} points, making it reach the maximum value ({playerDB.StartingLife}) allowed for this game.";
             }
             else
             {
                 increaseAmount = request.IncreaseAmount;
+    
+                message = $"Player had his life increased by {increaseAmount} ";
 
-                message = $"Player had his life increased by {increaseAmount} points. His current life has now {playerDB.CurrentLife + increaseAmount} points";
+                message += increaseAmount == 1 ? "point. " : "points. ";
+
+                message += $"His current life has now {playerDB.CurrentLife + increaseAmount} points.";
             }
 
             await this._daoDbContext
                     .Players
                     .Where(a => a.Id == request.PlayerId)
-                    .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLife, increaseAmount));
+                    .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLife, b => b.CurrentLife + increaseAmount));
                                                   
             return (null, message);
         }
-        private async Task<(bool, string)> IncreaseLifeValidation(PlayersIncreaseLifeRequest request)
+        private static (bool, string) IncreaseLifeValidation(PlayersIncreaseLifeRequest request)
         {
             if (request == null)
             {
@@ -256,27 +264,7 @@ namespace LifeCounterAPI.Services
             if (request.IncreaseAmount <= 0)
             {
                 return (false, "Error: invalid value. It must be a positive value.");
-            }
-
-            var exists = await this._daoDbContext
-                                   .Players
-                                   .AnyAsync(a => a.Id == request.PlayerId);
-
-            if (exists == false)
-            {
-                return (false, "Error: player not found");
-            }
-
-            var isMatchFinished = await this._daoDbContext
-                                            .Matches
-                                            .AnyAsync(a => a.Players.Select(a => a.Id)
-                                                                    .Contains(request.PlayerId)
-                                                                    && a.IsFinished == true);
-
-            if (isMatchFinished == true)
-            {
-                return (false, "Error: this player's match is already finished");
-            }        
+            }       
 
             return (true, string.Empty);
         }
@@ -293,42 +281,25 @@ namespace LifeCounterAPI.Services
             var playerDB = await this._daoDbContext
                                      .Players
                                      .Include(a => a.Match)
-                                     .FirstOrDefaultAsync(a => a.Id == request.PlayerId && a.IsDeleted == false && a.Match.IsFinished == false);
+                                     .FirstOrDefaultAsync(a => a.Id == request.PlayerId);
 
             if (playerDB == null)
-            {
-                var isMatchFinished = await this._daoDbContext
-                                            .Matches
-                                            .AnyAsync(a => a.Players.Select(a => a.Id)
-                                                                    .Contains(request.PlayerId.Value)
-                                                                    && a.IsFinished == true);
-                if (isMatchFinished == true)
-                {
-                    return (null, "Error: this player's match is already finished");
-                }
-
+            {               
                 return (null, "Error: player not found");
             }
 
-            message = $"Player's life was successfully set to {request.NewCurrentLife} points.";
 
-            var isMaxLifeFixed = await IsLifeTotalFixed(request.PlayerId.Value);
-
-            if (isMaxLifeFixed == true)
+            if(playerDB.IsDeleted == true)
             {
-                if (request.NewCurrentLife > playerDB.StartingLife)
-                {
-                    return (null, $"Error: the maximum amount allowed for this game is {playerDB.StartingLife}");
-                }
-
-                playerDB.CurrentLife = request.NewCurrentLife.Value;
-
-                await this._daoDbContext.SaveChangesAsync();
-
-                message = $"Player's life was successfully set to {request.NewCurrentLife} points.";
-
-                return (null, message);
+                return (null, "Error: this player's match has already ended");
             }
+
+            if(playerDB.FixedMaxLife == true && request.NewCurrentLife >= playerDB.StartingLife)
+            {
+                return (null, $"Error: this player's life total is already at the maximum value ({playerDB.StartingLife}) allowed for this game.");
+            }  
+
+            message = $"Player's life was successfully set to {request.NewCurrentLife} points.";
 
             await this._daoDbContext
                       .Players
@@ -360,15 +331,6 @@ namespace LifeCounterAPI.Services
             }               
 
             return (true, string.Empty);
-        }
-
-        private async Task<bool> IsLifeTotalFixed(int playerId)
-        {
-            return await this._daoDbContext
-                             .Games
-                             .Where(a => a.Matches.Any(b => b.Players.Any(c => c.Id == playerId)))
-                             .Select(a => a.FixedMaxLife)
-                             .FirstOrDefaultAsync();
         }
 
         public async Task<(PlayersDecreaseLifeResponse?, string)> DecreaseLife(PlayersDecreaseLifeRequest? request)
@@ -672,10 +634,19 @@ namespace LifeCounterAPI.Services
 
             var elapsedTime = currentTimeMark - matchDB.StartingTime;
 
+            TimeSpan timeSpan = TimeSpan.FromTicks(elapsedTime);
+
+            //timeSpan = TimeSpan.FromTicks(999_999_999_999_999_999); // for testing purposes
+
             if (matchDB.IsFinished == true)
             {
                 elapsedTime = matchDB.Duration;
+
+                timeSpan = TimeSpan.FromTicks(elapsedTime);
+                
             }
+
+            string formattedTime = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
 
             var content = new PlayersShowMatchStatusResponse();
 
@@ -693,14 +664,13 @@ namespace LifeCounterAPI.Services
                 });
             }
 
-            TimeSpan timeSpan = TimeSpan.FromTicks(elapsedTime);
-
-            string formattedTime = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
-
             content.ElapsedTime_minutes = formattedTime;
 
+            var daysElapsed = (int)timeSpan.TotalDays;
 
-            if (matchDB.Game.AutoEndMatch == true && (int)timeSpan.TotalDays >= 7)
+            message = $"The Match (id = {matchDB.Id}) status showed successfully";
+
+            if (matchDB.AutoEnd == true && daysElapsed >= 7)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
                 if (isFinishSucessful == false)
@@ -708,17 +678,20 @@ namespace LifeCounterAPI.Services
                     return (null, reportMessage);
                 }  
 
-                reportMessage += "This match's duration has reached 1 week and is therefore being automatically ended. ";
+                reportMessage = ". This match's duration has reached 1 week and is therefore being automatically ended. ";
+                reportMessage += "All players belonging to this match have been also deleted.";
                 content.IsFinished = true;
+
+                message += reportMessage;        
             }
 
             content.IsFinished = matchDB.IsFinished;
 
             var countAllPlayers = matchDB.Players.Count;
 
-            var countDefeatedPlayers = matchDB.Players.Where(a => a.CurrentLife == 0).Count();
+            var countDefeatedPlayers = matchDB.Players.Where(a => a.CurrentLife <= 0 || a.IsDeleted == true).Count();
 
-            if (matchDB.Game.AutoEndMatch == true && (countAllPlayers - countDefeatedPlayers <= 1) || (int)timeSpan.TotalDays >= 7)
+            if (matchDB.AutoEnd == true && (countAllPlayers - countDefeatedPlayers <= 1))
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
                 if (isFinishSucessful == false)
@@ -727,9 +700,11 @@ namespace LifeCounterAPI.Services
                 }
 
                 content.IsFinished = true;
+                message += ". Only one player is alive";
+                message += reportMessage;
             }
 
-            return (content, $"Match id {matchDB.Id} status showed successfully");
+            return (content, message);
         }
 
         public static (bool, string) ShowMatchStatusValidation(PlayersShowMatchStatusRequest request)
@@ -748,17 +723,13 @@ namespace LifeCounterAPI.Services
         }
 
         public async Task<(PlayersEndMatchResponse?, string)> EndMatch(PlayersEndMatchRequest request)
-        {
-            if (request == null)
-            {
-                return (null, "Error: no information provided");
-            }
+        {         
+            var (requestIsValid, message) = EndMatchValidation(request);
 
-            if (request.MatchId <= 0)
+            if (requestIsValid == false)
             {
-                return (null, "Error: invalid MatchId");
+                return (null, message);
             }
-
 
             var matchDB = await this._daoDbContext
                                     .Matches
@@ -772,11 +743,8 @@ namespace LifeCounterAPI.Services
 
             if (matchDB.IsFinished == true)
             {
-                return (null, "Error: this match has been already finished previously");
+                return (null, "Error: this match was already finished.");
             }
-
-            var message = $"Match ended successfully";
-
 
             var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: request.MatchId);
 
@@ -784,19 +752,38 @@ namespace LifeCounterAPI.Services
             {
                 return (null, reportMessage);
             }
-            message += reportMessage;
+
+            message = "This match is now finished and all players belonging to this match have been also deleted.";
 
             return (null, message);
         }
 
+        private static (bool, string) EndMatchValidation(PlayersEndMatchRequest request)
+        {
+            if (request == null)
+            {
+                return (false, "Error: no information provided");
+            }
+
+            if (request.MatchId <= 0)
+            {
+                return (false, "Error: invalid MatchId. It must be a positive value");
+            }
+
+            return (true, string.Empty);
+        }
         public async Task<(PlayersShowStatsResponse?, string)> ShowStats(PlayersShowStatsRequest request)
         {
             var finishedMatches = 0;
             var unfinishedMatches = 0;
             var avgPlayersPerMatch = 0;
-            var avgMatchDurationMinutes = 0;
-            var mostPlayedGame = 0;
-            var avgLongestGame = 0;
+            var avgMatchDuration = string.Empty;
+            var mostPlayedGame_id = 0;
+            var mostPlayedGame_name = string.Empty;
+            var avgLongestGame_id = 0;
+            var avgLongestGame_name = string.Empty;
+
+            TimeSpan timeSpan = TimeSpan.FromMinutes(0);
 
             finishedMatches = await this._daoDbContext
                                         .Matches
@@ -823,46 +810,64 @@ namespace LifeCounterAPI.Services
 
             if (finishedMatches == 0)
             {
-                avgMatchDurationMinutes = 0;
+                avgMatchDuration = "00:00";
             }
             else
             {
-                avgMatchDurationMinutes = (await this._daoDbContext
+                long avgMatchDuration_minutes = (await this._daoDbContext
                                               .Matches
                                               .Where(a => a.IsFinished == true)
-                                              .Select(a => (int)a.Duration)
+                                              .Select(a => a.Duration)
                                               .SumAsync())
                                               / finishedMatches;
+
+                timeSpan = TimeSpan.FromTicks(avgMatchDuration_minutes);
+                
+                avgMatchDuration = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
+
             }
 
-            mostPlayedGame = await this._daoDbContext
-                                       .Matches
-                                       .Where(a => a.IsFinished == true)
-                                       .GroupBy(a => a.GameId)
-                                       .Select(a => a.Count())
-                                       .MaxAsync();
+            mostPlayedGame_id = await this._daoDbContext
+                                          .Matches
+                                          .Where(a => a.IsFinished == true)
+                                          .GroupBy(a => a.GameId)
+                                          .Select(a => a.Count())
+                                          .MaxAsync();
 
-            avgLongestGame = await this._daoDbContext
-                                       .Matches
-                                       .Where(a => a.IsFinished == true)
-                                       .GroupBy(a => a.GameId)
-                                       .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration).Average() })
-                                       .OrderByDescending(a => a.AvgDuration)
-                                       .Select(a => a.GameId)
-                                       .FirstOrDefaultAsync();
+            mostPlayedGame_name = await this._daoDbContext
+                                            .Games
+                                            .Where(a => a.Id == mostPlayedGame_id)
+                                            .Select(a => a.Name)
+                                            .FirstOrDefaultAsync();
+
+            avgLongestGame_id = await this._daoDbContext
+                                          .Matches
+                                          .Where(a => a.IsFinished == true)
+                                          .GroupBy(a => a.GameId)
+                                          .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration).Average() })
+                                          .OrderByDescending(a => a.AvgDuration)
+                                          .Select(a => a.GameId)
+                                          .FirstOrDefaultAsync();
+
+            avgLongestGame_name = await this._daoDbContext
+                                            .Games
+                                            .Where(a => a.Id == avgLongestGame_id)
+                                            .Select(a => a.Name)
+                                            .FirstOrDefaultAsync();
 
             var content = new PlayersShowStatsResponse
             {
                 FinishedMatches = finishedMatches,
                 UnfinishedMatches = unfinishedMatches,
                 AvgPlayersPerMatch = avgPlayersPerMatch,
-                AvgMatchDurationMinutes = avgMatchDurationMinutes,
-                MostPlayedGame = mostPlayedGame,
-                AvgLongestGame = avgLongestGame
+                AvgMatchDuration = avgMatchDuration,
+                MostPlayedGame_id = mostPlayedGame_id,
+                MostPlayedGame_name = mostPlayedGame_name,
+                AvgLongestGame_id = avgLongestGame_id,
+                AvgLongestGame_name = avgLongestGame_name
             };
 
             return (content, "Statistics showed successfully");
-
         }
     }
 }
