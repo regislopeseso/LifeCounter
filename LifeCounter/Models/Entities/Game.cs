@@ -12,13 +12,12 @@ namespace LifeCounterAPI.Models.Entities
 
         public required string Name { get; set; }
 
-        public required int StartingLife { get; set; }
+        public required int PlayersStartingLife { get; set; }
 
         public required bool FixedMaxLife { get; set; }
+        
         public required bool AutoEndMatch { get; set; }
-        // Aqui talvez será necessário acrescentar o conceito de inverse property
-        // Razão: ser possível acessar um objeto match a partir de Game
-        // [InverseProperty("Game")]
+
         public List<Match>? Matches { get; set; }
 
         public bool IsDeleted { get; set; } = false;

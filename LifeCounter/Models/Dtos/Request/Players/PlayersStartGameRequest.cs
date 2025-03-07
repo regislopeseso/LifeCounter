@@ -4,6 +4,6 @@
     {
         public int GameId { get; set; }
         public int? PlayersCount { get; set; }
-        public List<int>? PlayersLifeTotals { get; set; }   
+        public List<int>? PlayersStartingLives { get; set; }   
     }
 }

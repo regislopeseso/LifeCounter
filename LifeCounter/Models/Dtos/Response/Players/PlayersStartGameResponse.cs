@@ -4,6 +4,6 @@
     {
         public int GameId { get; set; }
         public int MatchId { get; set; }
-        public List<PlayersNewMatchResponse_players> Players { get; set; }    
+        public List<PlayersNewMatchResponse_players>? Players { get; set; }    
     }
 }

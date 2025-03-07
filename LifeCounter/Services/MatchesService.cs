@@ -36,7 +36,7 @@ namespace LifeCounterAPI.Services
                 await _daoDbContext
                    .Players
                    .Include(a => a.Match)
-                   .Where(a => a.Match.GameId == gameId)
+                   .Where(a => a.Match!.GameId == gameId)
                    .ExecuteUpdateAsync(a => a
                    .SetProperty(b => b.IsDeleted, true));
 

@@ -14,6 +14,8 @@ namespace LifeCounterAPI.Models.Entities
 
         public int CurrentLife { get; set; }
 
+        public int? MaxLife {get; set;}
+
         [ForeignKey("Match")]
         public int MatchId { get; set; }
         public Match? Match { get; set; }

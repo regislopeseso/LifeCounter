@@ -26,17 +26,17 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Games
-                                   .AnyAsync(a => a.Name == request.GameName);
+                                   .AnyAsync(a => a.Name == request!.GameName);
 
             if (exists == true)
             {
-                return (null, $"Error: {request.GameName} already exists");
+                return (null, $"Error: {request!.GameName} already exists");
             }
 
             var newGame = new Game()
             {
-                Name = request.GameName,
-                StartingLife = request.LifeTotal.HasValue == true ? request.LifeTotal.Value : 99,
+                Name = request!.GameName!,
+                PlayersStartingLife = request.MaxLife.HasValue == true ? request.MaxLife.Value : 99,
                 FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false,
                 AutoEndMatch = request.AutoEndMatch == true ? request.AutoEndMatch.Value : false
             };
@@ -60,7 +60,7 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: informing a name for the new game is mandatory ");
             }
 
-            if (request.LifeTotal.HasValue == false)
+            if (request.MaxLife.HasValue == false)
             {
                 return (false, "Error: informing a LifeTotal for the new game is mandatory");
             }
@@ -89,7 +89,7 @@ namespace LifeCounterAPI.Services
 
             var gameDB = await this._daoDbContext
                                    .Games
-                                   .FirstOrDefaultAsync(a => a.Id == request.GameId);
+                                   .FirstOrDefaultAsync(a => a.Id == request!.GameId);
 
             if (gameDB == null)
             {
@@ -103,15 +103,15 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Games
-                                   .AnyAsync(a => a.Name == request.GameName && a.Id != request.GameId);
+                                   .AnyAsync(a => a.Name == request!.GameName && a.Id != request.GameId);
 
             if (exists == true)
             {
-                return (null, $"Error: {request.GameName} already exists");
+                return (null, $"Error: {request!.GameName} already exists");
             }            
 
-            gameDB.Name = request.GameName != null ? request.GameName : string.Empty;
-            gameDB.StartingLife = request.StartingLife.HasValue == true ? request.StartingLife.Value : 99;
+            gameDB.Name = request!.GameName != null ? request.GameName : string.Empty;
+            gameDB.PlayersStartingLife = request.StartingLife.HasValue == true ? request.StartingLife.Value : 99;
             gameDB.FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false;
             gameDB.AutoEndMatch = request.AutoEndMatch == true ? request.AutoEndMatch.Value : false;
 
@@ -161,7 +161,7 @@ namespace LifeCounterAPI.Services
 
             var exists = await this._daoDbContext
                                    .Games
-                                   .AnyAsync(a => a.Id == request.GameId);
+                                   .AnyAsync(a => a.Id == request!.GameId);
 
             if (exists == false)
             {
@@ -170,7 +170,7 @@ namespace LifeCounterAPI.Services
 
             var gameDB = await this._daoDbContext
                                    .Games                             
-                                   .FirstOrDefaultAsync(a => a.Id == request.GameId);
+                                   .FirstOrDefaultAsync(a => a.Id == request!.GameId);
 
             if (gameDB == null)
             {
@@ -182,7 +182,7 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: this game was has been deleted");
             }
                      
-            var (areMatchesFinished, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, request.GameId);
+            var (areMatchesFinished, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, request!.GameId);
 
             if (areMatchesFinished == false)
             {

@@ -15,7 +15,7 @@ namespace LifeCounterAPI.Models.Entities
         // Aqui talvez será necessário acrescentar o conceito de inverse property.
         // Razão: ser possível acessar um objeto match a partir de Game
         // [InverseProperty("Match")]
-        public Game Game {  get; set; }
+        public Game? Game {  get; set; }
 
         public required List<Player> Players {  get; set; }
 
