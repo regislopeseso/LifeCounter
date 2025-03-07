@@ -3,7 +3,7 @@
     public class AdminsCreateGameRequest
     {
         public string? GameName {  get; set; }
-        public int? MaxLife { get; set; }
+        public int? PlayersStartingLife { get; set; }
         public bool? FixedMaxLife { get; set; }
         public bool? AutoEndMatch { get; set; }
     }

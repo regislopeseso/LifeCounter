@@ -36,7 +36,7 @@ namespace LifeCounterAPI.Services
             var newGame = new Game()
             {
                 Name = request!.GameName!,
-                PlayersStartingLife = request.MaxLife.HasValue == true ? request.MaxLife.Value : 99,
+                PlayersStartingLife = request.PlayersStartingLife.HasValue == true ? request.PlayersStartingLife.Value : 99,
                 FixedMaxLife = request.FixedMaxLife == true ? request.FixedMaxLife.Value : false,
                 AutoEndMatch = request.AutoEndMatch == true ? request.AutoEndMatch.Value : false
             };
@@ -60,9 +60,9 @@ namespace LifeCounterAPI.Services
                 return (false, "Error: informing a name for the new game is mandatory ");
             }
 
-            if (request.MaxLife.HasValue == false)
+            if (request.PlayersStartingLife.HasValue == false)
             {
-                return (false, "Error: informing a LifeTotal for the new game is mandatory");
+                return (false, "Error: informing the players starting life for the new game is mandatory");
             }
 
             if(request.FixedMaxLife.HasValue == false)

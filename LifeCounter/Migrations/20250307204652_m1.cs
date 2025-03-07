@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LifeCounterAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class M1 : Migration
+    public partial class m1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace LifeCounterAPI.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     Name = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    StartingLife = table.Column<int>(type: "int", nullable: false),
+                    PlayersStartingLife = table.Column<int>(type: "int", nullable: false),
                     FixedMaxLife = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     AutoEndMatch = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)
@@ -67,6 +67,7 @@ namespace LifeCounterAPI.Migrations
                         .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
                     StartingLife = table.Column<int>(type: "int", nullable: false),
                     CurrentLife = table.Column<int>(type: "int", nullable: false),
+                    MaxLife = table.Column<int>(type: "int", nullable: true),
                     MatchId = table.Column<int>(type: "int", nullable: false),
                     FixedMaxLife = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "tinyint(1)", nullable: false)

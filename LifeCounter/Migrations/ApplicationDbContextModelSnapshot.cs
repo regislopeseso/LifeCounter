@@ -38,12 +38,12 @@ namespace LifeCounterAPI.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<int>("MaxLife")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<int>("PlayersStartingLife")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

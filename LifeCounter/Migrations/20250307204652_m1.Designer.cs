@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250307203721_m4")]
-    partial class m4
+    [Migration("20250307204652_m1")]
+    partial class m1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,12 +41,12 @@ namespace LifeCounterAPI.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<int>("MaxLife")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<int>("PlayersStartingLife")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
