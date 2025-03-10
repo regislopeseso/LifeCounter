@@ -61,8 +61,8 @@ namespace LifeCounterAPI.Migrations
                     b.Property<bool>("AutoEnd")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<long>("Duration")
-                        .HasColumnType("bigint");
+                    b.Property<int>("Duration_minutes")
+                        .HasColumnType("int");
 
                     b.Property<long>("EndingTime")
                         .HasColumnType("bigint");

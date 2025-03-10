@@ -632,7 +632,7 @@ namespace LifeCounterAPI.Services
 
             if (matchDB.IsFinished == true)
             {
-                elapsedTime = matchDB.Duration;
+                elapsedTime = matchDB.Duration_minutes;
 
                 timeSpan = TimeSpan.FromTicks(elapsedTime);
 
@@ -683,16 +683,21 @@ namespace LifeCounterAPI.Services
 
             var countDefeatedPlayers = matchDB.Players.Where(a => a.CurrentLife <= 0 || a.IsDeleted == true).Count();
 
-            if (matchDB.AutoEnd == true && (countAllPlayers - countDefeatedPlayers <= 1))
+            var playersLeftAlive = countAllPlayers - countDefeatedPlayers;
+
+            if (matchDB.AutoEnd == true && playersLeftAlive <= 1)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
+                
                 if (isFinishSucessful == false)
                 {
                     return (null, reportMessage);
                 }
 
                 content.IsFinished = true;
-                message += ". Only one player is alive";
+
+                message += playersLeftAlive == 1 ? ". Only one player is alive" : ". No player is left alive.";
+
                 message += reportMessage;
             }
 
@@ -745,9 +750,7 @@ namespace LifeCounterAPI.Services
                 return (null, reportMessage);
             }
 
-            message = "This match is now finished and all players belonging to this match have been also deleted.";
-
-            return (null, message);
+            return (null, reportMessage);
         }
 
         private static (bool, string) EndMatchValidation(PlayersEndMatchRequest request)
@@ -809,7 +812,7 @@ namespace LifeCounterAPI.Services
                 long avgMatchDuration_minutes = (await this._daoDbContext
                                               .Matches
                                               .Where(a => a.IsFinished == true)
-                                              .Select(a => a.Duration)
+                                              .Select(a => a.Duration_minutes)
                                               .SumAsync())
                                               / finishedMatches;
 
@@ -836,7 +839,7 @@ namespace LifeCounterAPI.Services
                                           .Matches
                                           .Where(a => a.IsFinished == true)
                                           .GroupBy(a => a.GameId)
-                                          .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration).Average() })
+                                          .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration_minutes).Average() })
                                           .OrderByDescending(a => a.AvgDuration)
                                           .Select(a => a.GameId)
                                           .FirstOrDefaultAsync();

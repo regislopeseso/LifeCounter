@@ -43,7 +43,7 @@ namespace LifeCounterAPI.Migrations
                     PlayersCount = table.Column<int>(type: "int", nullable: false),
                     StartingTime = table.Column<long>(type: "bigint", nullable: false),
                     EndingTime = table.Column<long>(type: "bigint", nullable: false),
-                    Duration = table.Column<long>(type: "bigint", nullable: false),
+                    Duration_minutes = table.Column<int>(type: "int", nullable: false),
                     AutoEnd = table.Column<bool>(type: "tinyint(1)", nullable: false),
                     IsFinished = table.Column<bool>(type: "tinyint(1)", nullable: false)
                 },

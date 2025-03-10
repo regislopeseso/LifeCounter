@@ -30,7 +30,7 @@ namespace LifeCounterAPI.Services
                     .Where(a => a.GameId == gameId)
                     .ExecuteUpdateAsync(a => a
                     .SetProperty(b => b.EndingTime, currentTimeMark)
-                    .SetProperty(b => b.Duration, b => (currentTimeMark - b.StartingTime)/60_000_000)
+                    .SetProperty(b => b.Duration_minutes, b => (currentTimeMark - b.StartingTime)/60_000_000)
                     .SetProperty(b => b.IsFinished, true));
 
                 await _daoDbContext
@@ -48,7 +48,7 @@ namespace LifeCounterAPI.Services
                 .Where(a => a.Id == matchId)
                 .ExecuteUpdateAsync(a => a
                 .SetProperty(b => b.EndingTime, currentTimeMark)
-                .SetProperty(b => b.Duration, b => (currentTimeMark - b.StartingTime)/60_000_000)
+                .SetProperty(b => b.Duration_minutes, b => (currentTimeMark - b.StartingTime)/60_000_000)
                 .SetProperty(b => b.IsFinished, true));
 
             await _daoDbContext

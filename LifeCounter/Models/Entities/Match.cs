@@ -25,7 +25,7 @@ namespace LifeCounterAPI.Models.Entities
 
         public long EndingTime { get; set; }
 
-        public int Duration {  get; set; }
+        public int Duration_minutes {  get; set; }
 
         public bool AutoEnd { get; set; }
 
