@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LifeCounterAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250310122558_m1")]
+    [Migration("20250311143417_m1")]
     partial class m1
     {
         /// <inheritdoc />

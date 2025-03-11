@@ -186,9 +186,22 @@ namespace LifeCounterAPI.Services
                 return (null, message);
             }
 
-            var playerDB = await this._daoDbContext
-                                     .Players
-                                     .FirstOrDefaultAsync(a => a.Id == request.PlayerId);
+            var matchDB = await this._daoDbContext
+                                   .Matches
+                                   .Include(a => a.Players)
+                                   .FirstOrDefaultAsync(a => a.Players.Select(b => b.Id).Contains(request.PlayerId));
+
+            if(matchDB == null)
+            {
+                return (null, "Error: no match found connected to the requested player");
+            }
+
+            if (matchDB.IsFinished == true)
+            {
+                return (null, "Error: this player's match has already ended");
+            }
+
+            var playerDB = matchDB.Players.FirstOrDefault(a => a.Id == request.PlayerId);
 
             if (playerDB == null)
             {
@@ -197,10 +210,10 @@ namespace LifeCounterAPI.Services
 
             if (playerDB.IsDeleted == true)
             {
-                return (null, "Error: this player's match has already ended");
+                return (null, "Error: this player is deleted");
             }
 
-            if (playerDB.FixedMaxLife == true && playerDB.CurrentLife + request.IncreaseAmount > playerDB.MaxLife)
+            if (playerDB.FixedMaxLife == true && playerDB.CurrentLife == playerDB.MaxLife)
             {
                 return (null, $"Error: this player's life total is already at the maximum value ({playerDB.MaxLife}) allowed for this game");
             }
@@ -234,12 +247,27 @@ namespace LifeCounterAPI.Services
                 message += $"His current life has now {playerDB.CurrentLife + increaseAmount} points.";
             }
 
-            await this._daoDbContext
-                    .Players
-                    .Where(a => a.Id == request.PlayerId)
-                    .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLife, b => b.CurrentLife + increaseAmount));
+            playerDB.CurrentLife += increaseAmount!.Value;
 
-            return (null, message);
+            await this._daoDbContext.SaveChangesAsync();
+
+            var players = new List<PlayersIncreaseLifeResponse_players>() { };
+
+            foreach(var player in matchDB!.Players)
+            {
+                players.Add(new PlayersIncreaseLifeResponse_players
+                {
+                    PlayerId = player.Id,
+                    CurrentLife = player.CurrentLife
+                });
+            }
+
+            var content = new PlayersIncreaseLifeResponse()
+            {
+                Players = players
+            };
+
+            return (content, message);
         }
         private static (bool, string) IncreaseLifeValidation(PlayersIncreaseLifeRequest request)
         {
