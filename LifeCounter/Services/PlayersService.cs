@@ -403,7 +403,9 @@ namespace LifeCounterAPI.Services
 
             var playerIds = new List<int>();
 
-            var playerIdsDB = matchDB.Players.Select(a => a.Id).ToList();
+            var playerIdsDB = matchDB.Players
+                .Select(a => a.Id)
+                .ToList();
 
             if (request.PlayerIds != null && request.PlayerIds.Count != 0)
             {
@@ -441,31 +443,55 @@ namespace LifeCounterAPI.Services
 
             foreach (var playerId in playerIds)
             {
-                var playerDB = matchDB.Players.Where(a => a.Id == playerId).FirstOrDefault();
+                var playerDB = matchDB.Players
+                    .Where(a => a.Id == playerId)
+                    .FirstOrDefault();
+                
                 if (playerDB == null)
                 {
                     continue;
                 }
+                
                 playerDB.CurrentLife -= request.DecreaseAmount;
             }
 
             await this._daoDbContext.SaveChangesAsync();
 
-            var defeatedPlayersCount = matchDB.Players.Where(a => a.CurrentLife <= 0).Count();
+            var defeatedPlayersCount = matchDB.Players
+                .Where(a => a.CurrentLife <= 0)
+                .Count();
 
             var isFinished = matchDB.PlayersCount - defeatedPlayersCount <= 1;
 
             if (isFinished == true && isAutoEndMatchOn == true)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
+                
                 if (isFinishSucessful == false)
                 {
                     return (null, reportMessage);
                 }
+               
                 message += reportMessage;
             }
 
-            return (null, message.Trim());
+            var players = new List<PlayersDecreaseLifeResponse_player>(){ };
+
+            foreach(var player in matchDB.Players)
+            {
+                players.Add(new PlayersDecreaseLifeResponse_player
+                {
+                    PlayerId = player.Id,
+                    CurrentLife = player.CurrentLife
+                });
+            }
+
+            var content = new PlayersDecreaseLifeResponse
+            {
+                Players = players
+            };                
+
+            return (content, message.Trim());
         }
         private static (bool, string) DecreaseLifeValidation(PlayersDecreaseLifeRequest request)
         {
