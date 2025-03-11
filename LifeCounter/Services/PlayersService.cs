@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using LifeCounterAPI.Models.Dtos.Request.Players;
 using LifeCounterAPI.Models.Dtos.Response.Players;
 using LifeCounterAPI.Models.Entities;
@@ -111,19 +112,20 @@ namespace LifeCounterAPI.Services
                 AutoEnd = gameDB.AutoEndMatch,
             };
 
-            gameDB.Matches ??= new List<Match>();
+            gameDB.Matches ??= [];
 
             gameDB.Matches.Add(newMatch);
 
             await this._daoDbContext.SaveChangesAsync();
 
-            var content = new PlayersNewMatchResponse();
+            var content = new PlayersNewMatchResponse
+            {
+                GameId = newMatch.GameId,
 
-            content.GameId = newMatch.GameId;
+                MatchId = newMatch.Id,
 
-            content.MatchId = newMatch.Id;
-
-            content.Players = new List<PlayersNewMatchResponse_players>() { };
+                Players = []
+            };
 
             foreach (var newPlayer in newPlayers)
             {
@@ -187,9 +189,11 @@ namespace LifeCounterAPI.Services
             }
 
             var matchDB = await this._daoDbContext
-                                   .Matches
-                                   .Include(a => a.Players)
-                                   .FirstOrDefaultAsync(a => a.Players.Select(b => b.Id).Contains(request.PlayerId));
+                .Matches                    
+                .Include(a => a.Players)
+                .FirstOrDefaultAsync(a => a.Players
+                    .Select(b => b.Id)
+                    .Contains(request.PlayerId));
 
             if(matchDB == null)
             {
@@ -251,11 +255,11 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            var players = new List<PlayersIncreaseLifeResponse_players>() { };
+            var players = new List<PlayersIncreaseLifeResponse_player>() { };
 
             foreach(var player in matchDB!.Players)
             {
-                players.Add(new PlayersIncreaseLifeResponse_players
+                players.Add(new PlayersIncreaseLifeResponse_player
                 {
                     PlayerId = player.Id,
                     CurrentLife = player.CurrentLife
@@ -298,20 +302,31 @@ namespace LifeCounterAPI.Services
                 return (null, message);
             }
 
-            var playerDB = await this._daoDbContext
-                                     .Players
-                                     .Include(a => a.Match)
-                                     .FirstOrDefaultAsync(a => a.Id == request!.PlayerId);
+            var matchDB = await this._daoDbContext
+              .Matches
+              .Include(a => a.Players)
+              .FirstOrDefaultAsync(a => a.Players.Select(b => b.Id).Contains(request!.PlayerId!.Value));
+
+            if (matchDB == null)
+            {
+                return (null, "Error: no match found connected to the requested player");
+            }
+
+            if (matchDB.IsFinished == true)
+            {
+                return (null, "Error: this player's match has already ended");
+            }
+
+            var playerDB = matchDB.Players.FirstOrDefault(a => a.Id == request!.PlayerId);
 
             if (playerDB == null)
             {
                 return (null, "Error: player not found");
             }
 
-
             if (playerDB.IsDeleted == true)
             {
-                return (null, "Error: this player's match has already ended");
+                return (null, "Error: this player is deleted");
             }
 
             if (playerDB.FixedMaxLife == true && request!.NewCurrentLife >= playerDB.MaxLife)
@@ -321,12 +336,27 @@ namespace LifeCounterAPI.Services
 
             message = $"Player's life was successfully set to {request!.NewCurrentLife} points.";
 
-            await this._daoDbContext
-                      .Players
-                      .Where(a => a.Id == request.PlayerId)
-                      .ExecuteUpdateAsync(a => a.SetProperty(b => b.CurrentLife, request.NewCurrentLife));
+            playerDB.CurrentLife = request.NewCurrentLife!.Value;
 
-            return (null, message);
+            var players = new List<PlayersSetLifeResponse_player>() { };
+
+            foreach(var player in matchDB.Players)
+            {
+                players.Add(new PlayersSetLifeResponse_player
+                {
+                    PlayerId = player.Id,
+                    CurrentLife = player.CurrentLife
+                });
+            }
+
+            var content = new PlayersSetLifeResponse
+            {
+                Players = players
+            };
+
+            await this._daoDbContext.SaveChangesAsync();
+
+            return (content, message);
         }
         private static (bool, string) SetLifeValidation(PlayersSetLifeRequest request)
         {
@@ -641,9 +671,9 @@ namespace LifeCounterAPI.Services
             }
 
             var matchDB = await this._daoDbContext
-                                    .Matches
-                                    .Include(a => a.Players)
-                                    .FirstOrDefaultAsync(a => a.Id == request.MatchId);
+                .Matches
+                .Include(a => a.Players)
+                .FirstOrDefaultAsync(a => a.Id == request.MatchId);
 
             if (matchDB == null)
             {
@@ -668,19 +698,20 @@ namespace LifeCounterAPI.Services
 
             string formattedTime = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
 
-            var content = new PlayersShowMatchStatusResponse();
+            var content = new PlayersShowMatchStatusResponse
+            {
+                GameId = matchDB.GameId,
 
-            content.GameId = matchDB.GameId;
+                MatchId = matchDB.Id,
 
-            content.MatchId = matchDB.Id;
-
-            content.Players = new List<PlayersShowMatchStatusResponse_players>() { };
+                Players = []
+            };
             foreach (var player in matchDB.Players)
             {
                 content.Players.Add(new PlayersShowMatchStatusResponse_players
                 {
                     PlayerId = player.Id,
-                    CurrentLifeTotal = player.CurrentLife,
+                    CurrentLife = player.CurrentLife,
                 });
             }
 
@@ -709,7 +740,9 @@ namespace LifeCounterAPI.Services
 
             var countAllPlayers = matchDB.Players.Count;
 
-            var countDefeatedPlayers = matchDB.Players.Where(a => a.CurrentLife <= 0 || a.IsDeleted == true).Count();
+            var countDefeatedPlayers = matchDB.Players
+                .Where(a => a.CurrentLife <= 0 || a.IsDeleted == true)
+                .Count();
 
             var playersLeftAlive = countAllPlayers - countDefeatedPlayers;
 
@@ -809,14 +842,14 @@ namespace LifeCounterAPI.Services
             TimeSpan timeSpan = TimeSpan.FromMinutes(0);
 
             finishedMatches = await this._daoDbContext
-                                        .Matches
-                                        .Where(a => a.IsFinished == true)
-                                        .CountAsync();
+                .Matches
+                .Where(a => a.IsFinished == true)
+                .CountAsync();
 
             unfinishedMatches = await this._daoDbContext
-                                          .Matches
-                                          .Where(a => a.IsFinished == false)
-                                          .CountAsync();
+                .Matches
+                .Where(a => a.IsFinished == false)
+                .CountAsync();
 
             if (finishedMatches == 0 && unfinishedMatches == 0)
             {
@@ -825,10 +858,10 @@ namespace LifeCounterAPI.Services
             else
             {
                 avgPlayersPerMatch = (await this._daoDbContext
-                                               .Matches
-                                               .Select(a => a.PlayersCount)
-                                               .SumAsync())
-                                               / (finishedMatches + unfinishedMatches);
+                    .Matches
+                    .Select(a => a.PlayersCount)
+                    .SumAsync())
+                    / (finishedMatches + unfinishedMatches);
             }
 
             if (finishedMatches == 0)
@@ -838,11 +871,11 @@ namespace LifeCounterAPI.Services
             else
             {
                 long avgMatchDuration_minutes = (await this._daoDbContext
-                                              .Matches
-                                              .Where(a => a.IsFinished == true)
-                                              .Select(a => a.Duration_minutes)
-                                              .SumAsync())
-                                              / finishedMatches;
+                    .Matches
+                    .Where(a => a.IsFinished == true)
+                    .Select(a => a.Duration_minutes)
+                    .SumAsync())
+                    / finishedMatches;
 
                 timeSpan = TimeSpan.FromTicks(avgMatchDuration_minutes);
 
@@ -851,32 +884,32 @@ namespace LifeCounterAPI.Services
             }
 
             mostPlayedGame_id = await this._daoDbContext
-                                          .Matches
-                                          .Where(a => a.IsFinished == true)
-                                          .GroupBy(a => a.GameId)
-                                          .Select(a => a.Count())
-                                          .MaxAsync();
+                .Matches
+                .Where(a => a.IsFinished == true)
+                .GroupBy(a => a.GameId)
+                .Select(a => a.Count())
+                .MaxAsync();
 
             mostPlayedGame_name = await this._daoDbContext
-                                            .Games
-                                            .Where(a => a.Id == mostPlayedGame_id)
-                                            .Select(a => a.Name)
-                                            .FirstOrDefaultAsync();
+                .Games
+                .Where(a => a.Id == mostPlayedGame_id)
+                .Select(a => a.Name)
+                .FirstOrDefaultAsync();
 
             avgLongestGame_id = await this._daoDbContext
-                                          .Matches
-                                          .Where(a => a.IsFinished == true)
-                                          .GroupBy(a => a.GameId)
-                                          .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration_minutes).Average() })
-                                          .OrderByDescending(a => a.AvgDuration)
-                                          .Select(a => a.GameId)
-                                          .FirstOrDefaultAsync();
+                .Matches
+                .Where(a => a.IsFinished == true)
+                .GroupBy(a => a.GameId)
+                .Select(a => new { GameId = a.Key, AvgDuration = a.Select(b => b.Duration_minutes).Average() })
+                .OrderByDescending(a => a.AvgDuration)
+                .Select(a => a.GameId)
+                .FirstOrDefaultAsync();
 
             avgLongestGame_name = await this._daoDbContext
-                                            .Games
-                                            .Where(a => a.Id == avgLongestGame_id)
-                                            .Select(a => a.Name)
-                                            .FirstOrDefaultAsync();
+                .Games
+                .Where(a => a.Id == avgLongestGame_id)
+                .Select(a => a.Name)
+                .FirstOrDefaultAsync();
 
             var content = new PlayersShowStatsResponse
             {
