@@ -129,7 +129,7 @@ namespace LifeCounterAPI.Services
 
             foreach (var newPlayer in newPlayers)
             {
-                content.Players.Add(new PlayersNewMatchResponse_players
+                content.Players.Add(new PlayersNewMatchResponse_player
                 {
                     PlayerId = newPlayer.Id,
                     StartingLife = newPlayer.CurrentLife,
@@ -538,6 +538,7 @@ namespace LifeCounterAPI.Services
             }
 
             Match? matchDB;
+
             (matchDB, message) = await GetMatch(request.MatchId, request.PlayerIds);
 
             if (matchDB == null || matchDB.Players == null || matchDB.Players.Count == 0)
@@ -576,7 +577,6 @@ namespace LifeCounterAPI.Services
                         $"Player (id = {playerIds[0]}) had his life reset." :
                         $"Players (ids = {string.Join(", ", playerIds)}) had their lives reset.";
 
-
             foreach (var playerId in playerIds)
             {
                 var playerDB = matchDB.Players.Where(a => a.Id == playerId).FirstOrDefault();
@@ -589,7 +589,28 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, message.Trim());
+            
+
+            var players = new List<PlayersResetLifeResponse_player>() { };
+
+            foreach( var player in matchDB.Players)
+            {
+                players.Add
+                    (
+                        new PlayersResetLifeResponse_player
+                        {
+                            PlayerId = player.Id,
+                            CurrentLife = player.CurrentLife
+                        }
+                    );
+            }
+
+            var content = new PlayersResetLifeResponse
+            {
+                Players = players
+            };               
+
+            return (content, message.Trim());
         }
         private static (bool, string) ResetLifeValidation(PlayersResetLifeRequest request)
         {

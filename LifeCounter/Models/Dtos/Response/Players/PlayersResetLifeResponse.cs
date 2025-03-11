@@ -2,6 +2,6 @@
 {
     public class PlayersResetLifeResponse
     { 
-
+        public List<PlayersResetLifeResponse_player>? Players { get; set; }
     }
 }

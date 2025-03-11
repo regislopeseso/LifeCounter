@@ -2,6 +2,6 @@
 {
     public class PlayersDecreaseLifeResponse
     {
-        public List<PlayersDecreaseLifeResponse_player> Players { get; set; }
+        public List<PlayersDecreaseLifeResponse_player>? Players { get; set; }
     }
 }
