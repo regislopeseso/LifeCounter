@@ -43,7 +43,7 @@ namespace LifeCounterAPI.Services
             var newPlayers = new List<Player>();
 
             var correctedStartingLives = new List<int>() { };
-            
+
             // Next, a sequence of "ifs" to transform and/or correct the parameters
             // PlayersCount and PlayersStartingLives
             if (request.PlayersCount.HasValue == false && request.PlayersStartingLives == null)
@@ -74,20 +74,20 @@ namespace LifeCounterAPI.Services
                 }
             }
 
-            if (request.PlayersCount.HasValue == true && 
-                request.PlayersCount != 0 && 
-                request.PlayersStartingLives != null && 
+            if (request.PlayersCount.HasValue == true &&
+                request.PlayersCount != 0 &&
+                request.PlayersStartingLives != null &&
                 request.PlayersCount > request.PlayersStartingLives.Count)
             {
                 var lackingStartingLivesEntries = request.PlayersCount - request.PlayersStartingLives.Count;
 
-                request.PlayersStartingLives.AddRange(Enumerable.Repeat(gameDB.PlayersStartingLife, lackingStartingLivesEntries.Value));           
+                request.PlayersStartingLives.AddRange(Enumerable.Repeat(gameDB.PlayersStartingLife, lackingStartingLivesEntries.Value));
             }
             // after this point it is guaranteed the existence of at least 2 PlayersStartingLives 
 
             int? playerMaxLife = gameDB.FixedMaxLife == true ? gameDB.PlayersStartingLife : null;
 
-            foreach(var startingLifeValue in request.PlayersStartingLives!)
+            foreach (var startingLifeValue in request.PlayersStartingLives!)
             {
                 newPlayers.Add
                 (
@@ -189,13 +189,13 @@ namespace LifeCounterAPI.Services
             }
 
             var matchDB = await this._daoDbContext
-                .Matches                    
+                .Matches
                 .Include(a => a.Players)
                 .FirstOrDefaultAsync(a => a.Players
                     .Select(b => b.Id)
                     .Contains(request.PlayerId));
 
-            if(matchDB == null)
+            if (matchDB == null)
             {
                 return (null, "Error: no match found connected to the requested player");
             }
@@ -257,7 +257,7 @@ namespace LifeCounterAPI.Services
 
             var players = new List<PlayersIncreaseLifeResponse_player>() { };
 
-            foreach(var player in matchDB!.Players)
+            foreach (var player in matchDB!.Players)
             {
                 players.Add(new PlayersIncreaseLifeResponse_player
                 {
@@ -340,7 +340,7 @@ namespace LifeCounterAPI.Services
 
             var players = new List<PlayersSetLifeResponse_player>() { };
 
-            foreach(var player in matchDB.Players)
+            foreach (var player in matchDB.Players)
             {
                 players.Add(new PlayersSetLifeResponse_player
                 {
@@ -446,12 +446,12 @@ namespace LifeCounterAPI.Services
                 var playerDB = matchDB.Players
                     .Where(a => a.Id == playerId)
                     .FirstOrDefault();
-                
+
                 if (playerDB == null)
                 {
                     continue;
                 }
-                
+
                 playerDB.CurrentLife -= request.DecreaseAmount;
             }
 
@@ -466,18 +466,18 @@ namespace LifeCounterAPI.Services
             if (isFinished == true && isAutoEndMatchOn == true)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
-                
+
                 if (isFinishSucessful == false)
                 {
                     return (null, reportMessage);
                 }
-               
+
                 message += reportMessage;
             }
 
-            var players = new List<PlayersDecreaseLifeResponse_player>(){ };
+            var players = new List<PlayersDecreaseLifeResponse_player>() { };
 
-            foreach(var player in matchDB.Players)
+            foreach (var player in matchDB.Players)
             {
                 players.Add(new PlayersDecreaseLifeResponse_player
                 {
@@ -489,7 +489,7 @@ namespace LifeCounterAPI.Services
             var content = new PlayersDecreaseLifeResponse
             {
                 Players = players
-            };                
+            };
 
             return (content, message.Trim());
         }
@@ -589,11 +589,11 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            
+
 
             var players = new List<PlayersResetLifeResponse_player>() { };
 
-            foreach( var player in matchDB.Players)
+            foreach (var player in matchDB.Players)
             {
                 players.Add
                     (
@@ -608,7 +608,7 @@ namespace LifeCounterAPI.Services
             var content = new PlayersResetLifeResponse
             {
                 Players = players
-            };               
+            };
 
             return (content, message.Trim());
         }
@@ -727,23 +727,20 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: match not found");
             }
 
-            var currentTimeMark = DateTime.UtcNow.ToLocalTime().Ticks;
+          
 
-            var elapsedTime = currentTimeMark - matchDB.StartingTime;
+            var elapsedTime = matchDB.Duration_minutes;        
 
-            TimeSpan timeSpan = TimeSpan.FromTicks(elapsedTime);
-
-            //timeSpan = TimeSpan.FromTicks(999_999_999_999_999_999); // for testing purposes
-
-            if (matchDB.IsFinished == true)
+            if (matchDB.IsFinished == false)
             {
-                elapsedTime = matchDB.Duration_minutes;
+                var currentTimeMark = DateTime.UtcNow.ToLocalTime().Ticks;
 
-                timeSpan = TimeSpan.FromTicks(elapsedTime);
-
+                elapsedTime = (int)Math.Round
+                    (
+                        ((decimal)((currentTimeMark - matchDB.StartingTime) / (60_000_000)))
+                        , 0
+                    );
             }
-
-            string formattedTime = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
 
             var content = new PlayersShowMatchStatusResponse
             {
@@ -753,6 +750,7 @@ namespace LifeCounterAPI.Services
 
                 Players = []
             };
+
             foreach (var player in matchDB.Players)
             {
                 content.Players.Add(new PlayersShowMatchStatusResponse_players
@@ -762,13 +760,19 @@ namespace LifeCounterAPI.Services
                 });
             }
 
-            content.ElapsedTime_minutes = formattedTime;
+            content.ElapsedTime_minutes = elapsedTime;
 
-            var daysElapsed = (int)timeSpan.TotalDays;
+            content.IsFinished = matchDB.IsFinished;
 
             message = $"The Match (id = {matchDB.Id}) status showed successfully";
 
-            if (matchDB.AutoEnd == true && daysElapsed >= 7)
+            if (matchDB.IsFinished == true)
+            {
+                message += ". This match is already finished";
+                return (content, message);
+            }
+
+            if (matchDB.AutoEnd == true && elapsedTime >= 60 * 24 * 5 && matchDB.IsFinished == false)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
                 if (isFinishSucessful == false)
@@ -781,9 +785,7 @@ namespace LifeCounterAPI.Services
                 content.IsFinished = true;
 
                 message += reportMessage;
-            }
-
-            content.IsFinished = matchDB.IsFinished;
+            }            
 
             var countAllPlayers = matchDB.Players.Count;
 
@@ -793,10 +795,10 @@ namespace LifeCounterAPI.Services
 
             var playersLeftAlive = countAllPlayers - countDefeatedPlayers;
 
-            if (matchDB.AutoEnd == true && playersLeftAlive <= 1)
+            if (matchDB.AutoEnd == true && playersLeftAlive <= 1 && matchDB.IsFinished == false)
             {
                 var (isFinishSucessful, reportMessage) = await MatchesService.FinishMatch(_daoDbContext, matchId: matchDB.Id);
-                
+
                 if (isFinishSucessful == false)
                 {
                     return (null, reportMessage);
