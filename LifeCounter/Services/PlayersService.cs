@@ -727,9 +727,9 @@ namespace LifeCounterAPI.Services
                 return (null, "Error: match not found");
             }
 
-          
 
-            var elapsedTime = matchDB.Duration_minutes;        
+
+            var elapsedTime = matchDB.Duration_minutes;
 
             if (matchDB.IsFinished == false)
             {
@@ -785,7 +785,7 @@ namespace LifeCounterAPI.Services
                 content.IsFinished = true;
 
                 message += reportMessage;
-            }            
+            }
 
             var countAllPlayers = matchDB.Players.Count;
 
@@ -882,7 +882,7 @@ namespace LifeCounterAPI.Services
             var finishedMatches = 0;
             var unfinishedMatches = 0;
             var avgPlayersPerMatch = 0;
-            var avgMatchDuration = string.Empty;
+            var avgMatchDuration = 0;
             var mostPlayedGame_id = 0;
             var mostPlayedGame_name = string.Empty;
             var avgLongestGame_id = 0;
@@ -915,29 +915,40 @@ namespace LifeCounterAPI.Services
 
             if (finishedMatches == 0)
             {
-                avgMatchDuration = "00:00";
+                avgMatchDuration = 0;
             }
             else
             {
-                long avgMatchDuration_minutes = (await this._daoDbContext
-                    .Matches
-                    .Where(a => a.IsFinished == true)
-                    .Select(a => a.Duration_minutes)
-                    .SumAsync())
-                    / finishedMatches;
+                int avgMatchDuration_minutes = (int)Math.Round
+                    (
+                        (
+                            (await this._daoDbContext
+                            .Matches
+                            .Where(a => a.IsFinished == true)
+                            .Select(a => a.Duration_minutes)
+                            .AverageAsync())
+                        )
+                        , 0
+                    );
 
-                timeSpan = TimeSpan.FromTicks(avgMatchDuration_minutes);
-
-                avgMatchDuration = $"{(int)timeSpan.TotalDays:D2}:{(int)timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
-
+                avgMatchDuration = avgMatchDuration_minutes;
             }
+
+            //mostPlayedGame_id = await this._daoDbContext
+            //    .Matches
+            //    .Where(a => a.IsFinished == true)
+            //    .GroupBy(a => a.GameId)
+            //    .Select(a => a.Count())
+            //    .MaxAsync();
 
             mostPlayedGame_id = await this._daoDbContext
                 .Matches
                 .Where(a => a.IsFinished == true)
                 .GroupBy(a => a.GameId)
-                .Select(a => a.Count())
-                .MaxAsync();
+                .OrderByDescending(a => a.Count())
+                .ThenByDescending(a => a.Sum(b => b.Duration_minutes))
+                .Select(a => a.Key)
+                .FirstOrDefaultAsync();
 
             mostPlayedGame_name = await this._daoDbContext
                 .Games
