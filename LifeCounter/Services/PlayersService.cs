@@ -877,6 +877,7 @@ namespace LifeCounterAPI.Services
 
             return (true, string.Empty);
         }
+        
         public async Task<(PlayersShowStatsResponse?, string)> ShowStats(PlayersShowStatsRequest request)
         {
             var finishedMatches = 0;

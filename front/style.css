@@ -1,0 +1,32 @@
+:root {
+  --bg-color: #1f242e;
+  --second-bg-color: #323946;
+  --text-color: #fff;
+  --main-color: #0ef;
+}
+
+body {
+  background-color: var(--bg-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  border: 3px solid var(--second-bg-color);
+  border-radius: 15px; /* Adjust this value for more or less rounding */
+  box-shadow: 0 0 1rem;
+  position: relative;
+  width: 500px;
+  height: 200px;
+  color: var(--text-color);
+}
+
+h1 {
+  text-align: center;
+  border: 3px solid var(--second-bg-color);
+  border-radius: 15px;
+  box-shadow: 0 0 0.1rem;
+}
