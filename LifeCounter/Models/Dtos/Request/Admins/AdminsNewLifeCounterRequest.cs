@@ -1,6 +1,6 @@
 ﻿namespace LifeCounterAPI.Models.Dtos.Request.Admin
 {
-    public class AdminsCreateGameRequest
+    public class AdminsNewLifeCounterRequest
     {
         public string? GameName {  get; set; }
         public int? PlayersStartingLife { get; set; }

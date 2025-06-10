@@ -18,11 +18,11 @@ namespace LifeCounterAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateGame([FromForm] AdminsCreateGameRequest? request)
+        public async Task<IActionResult> NewLifeCounter([FromForm] AdminsNewLifeCounterRequest? request)
         {
-            var (content, message) = await this._adminsService.CreateGame(request);
+            var (content, message) = await this._adminsService.NewLifeCounter(request);
 
-            var response = new Response<AdminsCreateGameResponse>
+            var response = new Response<AdminsNewLifeCounterResponse>
             {
                 Content = content,
                 Message = message

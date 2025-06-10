@@ -13,6 +13,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<AdminsService>();
 builder.Services.AddScoped<PlayersService>();
 

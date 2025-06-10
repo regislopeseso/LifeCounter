@@ -15,9 +15,9 @@ namespace LifeCounterAPI.Services
             _daoDbContext = daoDbContext;
         }
 
-        public async Task<(AdminsCreateGameResponse?, string)> CreateGame(AdminsCreateGameRequest? request)
+        public async Task<(AdminsNewLifeCounterResponse?, string)> NewLifeCounter(AdminsNewLifeCounterRequest? request)
         {          
-            var (isValid, message) = CreateValidation(request);
+            var (isValid, message) = NewLifeCounter_Validation(request);
 
             if (isValid == false)
             {
@@ -45,10 +45,10 @@ namespace LifeCounterAPI.Services
 
             await this._daoDbContext.SaveChangesAsync();
 
-            return (null, "New game created successfully");
+            return (new AdminsNewLifeCounterResponse(), "New game created successfully");
         }
 
-        public static (bool, string) CreateValidation(AdminsCreateGameRequest? request)
+        public static (bool, string) NewLifeCounter_Validation(AdminsNewLifeCounterRequest? request)
         {
             if (request == null)
             {

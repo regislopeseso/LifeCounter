@@ -9,4 +9,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Match> Matches { get; set; }
     public DbSet<Player> Players { get; set; }
 
+    public DbSet<User> Users { get; set; } 
+    public DbSet<LifeCounter> LifeCounters { get; set; }
+
 }
